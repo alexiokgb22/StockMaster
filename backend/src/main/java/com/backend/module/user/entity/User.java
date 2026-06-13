@@ -3,6 +3,9 @@ package com.backend.module.user.entity;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.backend.module.activityreport.entity.ActivityReport;
+import com.backend.module.auditreport.entity.AuditReport;
+import com.backend.module.auditsession.entity.AuditSession;
 import com.backend.module.inventory.entity.Inventory;
 import com.backend.module.purchaseorder.entity.PurchaseOrder;
 import com.backend.module.role.entity.Role;
@@ -65,6 +68,16 @@ public class User extends BaseEntity {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
+    // Entrepôt d'affectation du magasinier.
+    // Null pour les autres rôles (admin, gestionnaire, auditeur).
+    // Permet au service de vérifier le périmètre du gestionnaire
+    // lors de la création/gestion des magasiniers.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_id")
+    private Warehouse assignedWarehouse;
+
+    // --- Relations inverses ---
+
     @OneToMany(mappedBy = "createdBy", fetch = FetchType.LAZY)
     @JsonIgnore
     @Builder.Default
@@ -85,8 +98,27 @@ public class User extends BaseEntity {
     @Builder.Default
     private Set<Inventory> inventories = new HashSet<>();
 
+    // Entrepôts dont cet utilisateur est le gestionnaire responsable
     @OneToMany(mappedBy = "manager", fetch = FetchType.LAZY)
     @JsonIgnore
     @Builder.Default
     private Set<Warehouse> managedWarehouses = new HashSet<>();
+
+    // Rapports d'activité rédigés par ce magasinier
+    @OneToMany(mappedBy = "storekeeper", fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private Set<ActivityReport> activityReports = new HashSet<>();
+
+    // Sessions d'audit lancées par cet auditeur
+    @OneToMany(mappedBy = "auditor", fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private Set<AuditSession> auditSessions = new HashSet<>();
+
+    // Rapports d'audit rédigés par cet auditeur
+    @OneToMany(mappedBy = "auditor", fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private Set<AuditReport> auditReports = new HashSet<>();
 }

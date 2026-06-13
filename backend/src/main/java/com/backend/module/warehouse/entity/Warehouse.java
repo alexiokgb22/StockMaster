@@ -3,6 +3,8 @@ package com.backend.module.warehouse.entity;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.backend.module.activityreport.entity.ActivityReport;
+import com.backend.module.auditreport.entity.AuditReport;
 import com.backend.module.inventory.entity.Inventory;
 import com.backend.module.purchaseorder.entity.PurchaseOrder;
 import com.backend.module.shared.entity.BaseEntity;
@@ -59,9 +61,12 @@ public class Warehouse extends BaseEntity {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
+    // Le gestionnaire responsable de cet entrepôt
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manager_id")
     private User manager;
+
+    // --- Relations inverses ---
 
     @OneToMany(mappedBy = "warehouse", fetch = FetchType.LAZY)
     @JsonIgnore
@@ -82,4 +87,22 @@ public class Warehouse extends BaseEntity {
     @JsonIgnore
     @Builder.Default
     private Set<Inventory> inventories = new HashSet<>();
+
+    // Magasiniers affectés à cet entrepôt
+    @OneToMany(mappedBy = "assignedWarehouse", fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private Set<User> storekeepers = new HashSet<>();
+
+    // Rapports d'activité des magasiniers de cet entrepôt
+    @OneToMany(mappedBy = "warehouse", fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private Set<ActivityReport> activityReports = new HashSet<>();
+
+    // Rapports d'audit portant sur cet entrepôt
+    @OneToMany(mappedBy = "warehouse", fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private Set<AuditReport> auditReports = new HashSet<>();
 }
