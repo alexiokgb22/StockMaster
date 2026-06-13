@@ -1,11 +1,10 @@
-package com.backend.module.role.entity;
+package com.backend.module.permission.entity;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import com.backend.module.permission.entity.Permission;
+import com.backend.module.role.entity.Role;
 import com.backend.module.shared.entity.BaseEntity;
-import com.backend.module.user.entity.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,11 +12,9 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,21 +23,32 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @Entity
-@Table(name = "roles")
+@Table(
+    name = "permissions",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_permissions_code", columnNames = "code")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class Role extends BaseEntity {
+public class Permission extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "name", nullable = false, unique = true, length = 100)
+    @Column(name = "code", nullable = false, unique = true, length = 100)
+    private String code;
+
+    @Column(name = "name", nullable = false, length = 150)
     private String name;
+
+    @Column(name = "module", nullable = false, length = 100)
+    private String module;
 
     @Column(name = "description")
     private String description;
@@ -48,18 +56,8 @@ public class Role extends BaseEntity {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "role_permissions",
-        joinColumns = @JoinColumn(name = "role_id"),
-        inverseJoinColumns = @JoinColumn(name = "permission_id")
-    )
+    @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
     @JsonIgnore
     @Builder.Default
-    private Set<Permission> permissions = new HashSet<>();
-
-    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
-    @JsonIgnore
-    @Builder.Default
-    private Set<User> users = new HashSet<>();
+    private Set<Role> roles = new HashSet<>();
 }
