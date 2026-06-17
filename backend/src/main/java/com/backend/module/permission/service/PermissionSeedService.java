@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,14 +29,22 @@ public class PermissionSeedService {
     }
 
     @EventListener(ApplicationReadyEvent.class)
+    @Order(1) // S'exécute en premier
     @Transactional
     public void seedPermissionsAndRoles() {
+        System.out.println("===============================================");
+        System.out.println("DÉMARRAGE DU SEED DES PERMISSIONS ET RÔLES");
+        System.out.println("===============================================");
+        
         // 1. Synchroniser le catalogue de permissions avec la base
         Map<String, Permission> existingPermissions = permissionRepository.findAll().stream()
             .collect(Collectors.toMap(Permission::getCode, p -> p));
 
+        System.out.println("Permissions existantes en base : " + existingPermissions.size());
+        
         Set<Permission> persistedPermissions = new HashSet<>();
 
+        int newPermissionsCount = 0;
         for (PermissionDefinition definition : PermissionCatalog.defaultDefinitions()) {
             Permission permission = existingPermissions.get(definition.code());
             if (permission == null) {
@@ -47,12 +56,20 @@ public class PermissionSeedService {
                     .isActive(true)
                     .build();
                 permission = permissionRepository.save(permission);
+                newPermissionsCount++;
             }
             persistedPermissions.add(permission);
         }
+        
+        System.out.println("Nouvelles permissions créées : " + newPermissionsCount);
+        System.out.println("Total de permissions : " + persistedPermissions.size());
 
         // 2. Créer les rôles et leur affecter les permissions
         seedRoles(persistedPermissions);
+        
+        System.out.println("===============================================");
+        System.out.println("SEED DES PERMISSIONS ET RÔLES TERMINÉ");
+        System.out.println("===============================================");
     }
 
     private void seedRoles(Set<Permission> all) {
@@ -160,6 +177,7 @@ public class PermissionSeedService {
 
     private Role findOrCreateRole(String name, String description) {
         return roleRepository.findByName(name).orElseGet(() -> {
+            System.out.println("Création du rôle : " + name);
             Role role = Role.builder()
                 .name(name)
                 .description(description)

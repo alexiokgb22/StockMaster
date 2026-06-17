@@ -1,11 +1,15 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { onMounted } from 'vue'
+import { useAuthStore } from './stores/auth'
+
+const authStore = useAuthStore()
+
+onMounted(async () => {
+  // Tenter de récupérer l'utilisateur si un cookie existe
+  await authStore.fetchUser()
+})
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p class="text-lg bg-red-500">
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <router-view />
 </template>
-
-<style scoped></style>
