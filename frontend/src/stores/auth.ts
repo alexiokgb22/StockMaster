@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import authService from '@/services/auth.service'
 import type { LoginRequest, UserInfo } from '@/types/auth.types'
+import router from '@/router'
 
 /**
  * Store Pinia pour l'authentification.
@@ -14,10 +15,11 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
 
   // Getters
-  const isAuthenticated = computed(() => user.value !== null)
-  const userRole = computed(() => user.value?.role || null)
-  const userPermissions = computed(() => user.value?.permissions || [])
-  const warehouseId = computed(() => user.value?.warehouseId || null)
+  const isAuthenticated    = computed(() => user.value !== null)
+  const userRole           = computed(() => user.value?.role || null)
+  const userPermissions    = computed(() => user.value?.permissions || [])
+  const warehouseId        = computed(() => user.value?.warehouseId || null)
+  const mustChangePassword = computed(() => user.value?.mustChangePassword ?? false)
 
   /**
    * Connexion d'un utilisateur.
@@ -33,9 +35,10 @@ export const useAuthStore = defineStore('auth', () => {
         username: response.username,
         email: response.email,
         role: response.role,
-        roleId: 0, // Sera récupéré par getCurrentUser
+        roleId: 0,
         permissions: response.permissions,
-        warehouseId: response.warehouseId
+        warehouseId: response.warehouseId,
+        mustChangePassword: response.mustChangePassword
       }
       return true
     } catch (err: any) {
@@ -110,6 +113,7 @@ export const useAuthStore = defineStore('auth', () => {
     userRole,
     userPermissions,
     warehouseId,
+    mustChangePassword,
     // Actions
     login,
     logout,

@@ -23,5 +23,6 @@ public class LoginResponse {
     private String role;
     private Set<String> permissions;
     private Long warehouseId;
+    private Boolean mustChangePassword;
     private String message;
 }

@@ -40,6 +40,10 @@ class AuthService {
       return false
     }
   }
+
+  async changePassword(newPassword: string): Promise<void> {
+    await api.post('/auth/change-password', { newPassword })
+  }
 }
 
 export default new AuthService()

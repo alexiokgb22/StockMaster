@@ -19,23 +19,26 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{ click: [event: MouseEvent] }>()
 
-const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-base focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent disabled:opacity-50 disabled:cursor-not-allowed select-none'
+const base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-fast focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent disabled:opacity-50 disabled:cursor-not-allowed select-none whitespace-nowrap'
 
 const variants: Record<string, string> = {
   primary:   'bg-primary text-white hover:bg-primary-hover active:bg-primary-dark shadow-sm',
-  secondary: 'bg-surface text-text-main border border-border hover:bg-surface-hover hover:border-border-strong shadow-sm',
-  accent:    'bg-accent text-primary hover:bg-accent-hover active:bg-accent-dark font-bold shadow-md',
+  secondary: 'bg-surface text-text-main border border-border hover:bg-background hover:border-border-strong shadow-sm',
+  accent:    'text-primary font-bold shadow-sm',
   success:   'bg-success text-white hover:bg-success-dark shadow-sm',
   danger:    'bg-error text-white hover:bg-error-dark shadow-sm',
-  ghost:     'text-text-main hover:bg-primary-100 hover:text-primary',
-  outline:   'border-2 border-primary text-primary hover:bg-primary-100',
+  ghost:     'text-text-secondary hover:bg-primary-100 hover:text-primary',
+  outline:   'border border-primary text-primary hover:bg-primary-100',
 }
 
+const accentStyle = 'background: linear-gradient(135deg, #F8D830 0%, #F8B830 100%)'
+
+// Tailles normalisées : hauteur 32/36/40/44px
 const sizes: Record<string, string> = {
-  xs: 'px-2.5 py-1 text-xs',
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-5 py-2.5 text-base',
+  xs: 'h-8  px-3   text-xs',
+  sm: 'h-9  px-3.5 text-sm',
+  md: 'h-10 px-4   text-sm',
+  lg: 'h-11 px-5   text-[15px]',
 }
 
 function handleClick(event: MouseEvent) {
@@ -48,6 +51,7 @@ function handleClick(event: MouseEvent) {
     :type="type"
     :disabled="disabled || loading"
     :class="[base, variants[variant], sizes[size], { 'w-full': fullWidth }]"
+    :style="variant === 'accent' ? accentStyle : undefined"
     @click="handleClick"
   >
     <svg v-if="loading" class="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">

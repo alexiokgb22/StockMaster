@@ -121,6 +121,7 @@ function occupancyColor(pct: number) {
     <!-- ── Header ── -->
     <PageHeader
       title="Centre de Contrôle"
+      :large="true"
       :subtitle="`Bienvenue, ${auth.user?.username} · ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}`"
     >
       <template #actions>
@@ -135,8 +136,8 @@ function occupancyColor(pct: number) {
       </template>
     </PageHeader>
 
-    <!-- ── KPIs 8 colonnes ── -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-4">
+    <!-- ── KPIs 4+4 (2 lignes de 4) ── -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
       <MetricCard
         v-for="kpi in kpis"
         :key="kpi.title"
@@ -147,7 +148,6 @@ function occupancyColor(pct: number) {
         :trend-value="kpi.trendValue"
         :color="kpi.color"
         :loading="loading"
-        class="xl:col-span-1 col-span-1"
       />
     </div>
 
@@ -343,6 +343,5 @@ function occupancyColor(pct: number) {
 </template>
 
 <style scoped>
-.w-4\.5 { width: 1.125rem; }
-.h-4\.5 { height: 1.125rem; }
+/* Suppression des classes locales, désormais centralisées dans design-system.css */
 </style>

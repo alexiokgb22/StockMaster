@@ -23,14 +23,16 @@ async function handleLogout() {
     <!-- Sidebar fixe gauche -->
     <Sidebar :open="sidebarOpen" @close="sidebarOpen = false" />
 
-    <!-- Zone principale avec padding left pour desktop -->
-    <div class="lg:pl-[260px] flex flex-col min-h-screen">
+    <!-- Zone principale -->
+    <div class="lg:pl-[256px] flex flex-col min-h-screen">
       <!-- Navbar sticky en haut -->
       <Navbar @toggle-sidebar="sidebarOpen = !sidebarOpen" @logout="handleLogout" />
 
-      <!-- Contenu principal avec bon spacing -->
-      <main class="flex-1 p-6 lg:p-8">
-        <RouterView />
+      <!-- Contenu principal -->
+      <main class="flex-1 px-5 py-6 lg:px-8 lg:py-8">
+        <div class="max-w-[1440px] mx-auto">
+          <RouterView />
+        </div>
       </main>
     </div>
   </div>

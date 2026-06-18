@@ -6,12 +6,14 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.backend.module.auth.dto.LoginRequest;
 import com.backend.module.auth.dto.LoginResponse;
 import com.backend.module.auth.dto.UserInfoResponse;
+import com.backend.exception.ResourceNotFoundException;
 import com.backend.module.user.entity.User;
 import com.backend.module.user.repository.UserRepository;
 import com.backend.security.CustomUserDetails;
@@ -31,6 +33,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Authentifie un utilisateur et génère un token JWT.
@@ -66,6 +69,7 @@ public class AuthService {
                 .role(userDetails.getRoleName())
                 .permissions(permissions)
                 .warehouseId(userDetails.getWarehouseId())
+                .mustChangePassword(userDetails.isMustChangePassword())
                 .message("Connexion réussie")
                 .build();
     }
@@ -92,7 +96,21 @@ public class AuthService {
                 .roleId(userDetails.getRoleId())
                 .permissions(permissions)
                 .warehouseId(userDetails.getWarehouseId())
+                .mustChangePassword(userDetails.isMustChangePassword())
                 .build();
+    }
+
+    /**
+     * Permet à l'utilisateur connecté de changer son propre mot de passe.
+     * Remet mustChangePassword à false.
+     */
+    @Transactional
+    public void changeOwnPassword(Long userId, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setMustChangePassword(false);
+        userRepository.save(user);
     }
 
     /**

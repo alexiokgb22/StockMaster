@@ -78,6 +78,7 @@ public class UserService {
                 .email(req.getEmail())
                 .password(passwordEncoder.encode(req.getPassword()))
                 .isActive(true)
+                .mustChangePassword(true)
                 .role(role)
                 .assignedWarehouse(warehouse)
                 .build();
@@ -111,6 +112,7 @@ public class UserService {
                 .email(req.getEmail())
                 .password(passwordEncoder.encode(req.getPassword()))
                 .isActive(true)
+                .mustChangePassword(true)
                 .role(storekeeperRole)
                 .assignedWarehouse(warehouse)
                 .build();
@@ -185,6 +187,7 @@ public class UserService {
     public void resetPassword(Long id, ResetPasswordRequest req) {
         User user = getUser(id);
         user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        user.setMustChangePassword(false);
         userRepository.save(user);
     }
 
@@ -242,17 +245,12 @@ public class UserService {
 
     /**
      * Résout l'entrepôt en fonction du rôle.
-     * Obligatoire pour Magasinier, ignoré pour les autres rôles.
+     * Facultatif même pour Magasinier (peut être assigné plus tard).
      */
     private Warehouse resolveWarehouse(Role role, Long warehouseId) {
-        if ("Magasinier".equals(role.getName())) {
-            if (warehouseId == null) {
-                throw new BusinessException("Un entrepôt doit être assigné pour le rôle Magasinier");
-            }
-            return warehouseRepository.findById(warehouseId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Entrepôt introuvable : " + warehouseId));
-        }
-        return null;
+        if (warehouseId == null) return null;
+        return warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Entrepôt introuvable : " + warehouseId));
     }
 
     private UserResponse toResponse(User u) {
@@ -261,6 +259,7 @@ public class UserService {
                 .username(u.getUsername())
                 .email(u.getEmail())
                 .isActive(u.getIsActive())
+                .mustChangePassword(Boolean.TRUE.equals(u.getMustChangePassword()))
                 .roleName(u.getRole().getName())
                 .roleId(u.getRole().getId())
                 .warehouseId(u.getAssignedWarehouse() != null ? u.getAssignedWarehouse().getId() : null)

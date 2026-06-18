@@ -3,6 +3,7 @@ export interface UserResponse {
   username: string
   email: string
   isActive: boolean
+  mustChangePassword: boolean
   roleName: string
   roleId: number
   warehouseId: number | null

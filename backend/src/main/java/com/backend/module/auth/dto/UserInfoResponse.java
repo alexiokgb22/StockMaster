@@ -23,4 +23,5 @@ public class UserInfoResponse {
     private Long roleId;
     private Set<String> permissions;
     private Long warehouseId;
+    private Boolean mustChangePassword;
 }

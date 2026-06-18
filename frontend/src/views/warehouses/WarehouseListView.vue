@@ -126,21 +126,21 @@ function handleSubmit() {
             </tr>
           </thead>
           <tbody class="divide-y divide-border-light">
-            <tr v-for="w in filtered" :key="w.id" class="hover:bg-background transition-fast group">
-              <td class="px-5 py-4">
+          <tr v-for="w in filtered" :key="w.id" class="hover:bg-background transition-fast group">
+              <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center shrink-0">
-                    <Warehouse class="w-4.5 h-4.5 text-primary" />
+                  <div class="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center shrink-0">
+                    <Warehouse class="icon-md text-primary" />
                   </div>
                   <span class="font-semibold text-text-main">{{ w.name }}</span>
                 </div>
               </td>
-              <td class="px-5 py-4">
+              <td class="px-5 py-3.5">
                 <div class="flex items-center gap-1.5 text-text-muted">
                   <MapPin class="w-3.5 h-3.5" />{{ w.city }}
                 </div>
               </td>
-              <td class="px-5 py-4">
+              <td class="px-5 py-3.5">
                 <div class="flex items-center gap-1.5 text-text-secondary">
                   <Users class="w-3.5 h-3.5 text-text-muted" />{{ w.manager }}
                 </div>
@@ -233,6 +233,5 @@ function handleSubmit() {
 </template>
 
 <style scoped>
-.w-4\.5 { width: 1.125rem; }
-.h-4\.5 { height: 1.125rem; }
+/* Styles locaux supprimés — icônes centralisées dans design-system.css */
 </style>

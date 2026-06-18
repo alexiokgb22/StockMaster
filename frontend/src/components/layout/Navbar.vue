@@ -59,7 +59,7 @@ function markAllRead() {
 </script>
 
 <template>
-  <header class="sticky top-0 z-30 h-16 bg-surface border-b border-border-light flex items-center px-4 gap-3 shadow-sm">
+  <header class="sticky top-0 z-30 h-[60px] bg-surface border-b border-border-light flex items-center px-4 lg:px-6 gap-3 shadow-sm">
 
     <!-- Burger (mobile) -->
     <button @click="emit('toggleSidebar')" class="lg:hidden p-2 rounded-lg text-text-muted hover:bg-background hover:text-primary transition-fast">

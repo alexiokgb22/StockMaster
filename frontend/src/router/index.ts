@@ -5,7 +5,6 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    // Routes publiques (authentification)
     {
       path: '/login',
       name: 'login',
@@ -14,7 +13,15 @@ const router = createRouter({
       meta: { requiresAuth: false }
     },
 
-    // Routes protégées avec layout
+    // Route chang. mot de passe — accessible uniquement si connecté
+    {
+      path: '/change-password',
+      name: 'change-password',
+      component: () => import('@/views/auth/ChangePasswordView.vue'),
+      beforeEnter: authGuard,
+      meta: { requiresAuth: true }
+    },
+
     {
       path: '/',
       component: AppLayout,

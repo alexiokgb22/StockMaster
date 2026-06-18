@@ -24,7 +24,11 @@ async function handleLogin() {
   const ok = await auth.login({ username: username.value.trim(), password: password.value })
   submitting.value = false
   if (ok) {
-    router.push((route.query.redirect as string) || '/dashboard')
+    if (auth.mustChangePassword) {
+      router.push('/change-password')
+    } else {
+      router.push((route.query.redirect as string) || '/dashboard')
+    }
   } else {
     error.value = auth.error || 'Identifiants invalides. Veuillez réessayer.'
   }

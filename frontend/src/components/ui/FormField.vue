@@ -12,15 +12,15 @@ defineProps<Props>()
 <template>
   <div class="space-y-1.5">
     <!-- Label -->
-    <label v-if="label" class="block text-label text-text-main">
+    <label v-if="label" class="block text-form-label">
       {{ label }}
       <span v-if="required" class="text-error ml-0.5">*</span>
     </label>
 
-    <!-- Slot pour input/select/textarea -->
+    <!-- Slot -->
     <slot />
 
-    <!-- Message d'erreur -->
+    <!-- Erreur -->
     <Transition name="slide-down">
       <p v-if="error" class="text-xs text-error-dark font-medium flex items-center gap-1.5">
         <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -30,7 +30,7 @@ defineProps<Props>()
       </p>
     </Transition>
 
-    <!-- Texte d'aide -->
+    <!-- Aide -->
     <p v-if="helpText && !error" class="text-xs text-text-muted">
       {{ helpText }}
     </p>
@@ -38,11 +38,6 @@ defineProps<Props>()
 </template>
 
 <style scoped>
-.slide-down-enter-active, .slide-down-leave-active {
-  transition: all 0.2s ease;
-}
-.slide-down-enter-from, .slide-down-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
+.slide-down-enter-active, .slide-down-leave-active { transition: all 0.18s ease; }
+.slide-down-enter-from, .slide-down-leave-to { opacity: 0; transform: translateY(-4px); }
 </style>

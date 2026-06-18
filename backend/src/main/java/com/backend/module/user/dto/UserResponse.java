@@ -12,6 +12,7 @@ public class UserResponse {
     private String username;
     private String email;
     private Boolean isActive;
+    private Boolean mustChangePassword;
     private String roleName;
     private Long roleId;
     private Long warehouseId;

@@ -15,8 +15,11 @@ import com.backend.module.auth.dto.LoginRequest;
 import com.backend.module.auth.dto.LoginResponse;
 import com.backend.module.auth.dto.UserInfoResponse;
 import com.backend.module.auth.service.AuthService;
+import com.backend.module.user.dto.ResetPasswordRequest;
+import com.backend.security.CustomUserDetails;
 import com.backend.security.JwtTokenProvider;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -96,6 +99,18 @@ public class AuthController {
     public ResponseEntity<UserInfoResponse> getCurrentUser() {
         UserInfoResponse userInfo = authService.getCurrentUser();
         return ResponseEntity.ok(userInfo);
+    }
+
+    /**
+     * Endpoint pour que l'utilisateur change son propre mot de passe (première connexion).
+     * Remet mustChangePassword à false une fois le changement effectué.
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(@Valid @RequestBody ResetPasswordRequest req) {
+        CustomUserDetails current = (CustomUserDetails)
+                SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        authService.changeOwnPassword(current.getId(), req.getNewPassword());
+        return ResponseEntity.noContent().build();
     }
 
     /**

@@ -13,6 +13,9 @@ export async function authGuard(
 
   // Si l'utilisateur est déjà authentifié
   if (authStore.isAuthenticated) {
+    if (authStore.mustChangePassword && to.name !== 'change-password') {
+      return next({ name: 'change-password' })
+    }
     return next()
   }
 
@@ -20,6 +23,9 @@ export async function authGuard(
   const authenticated = await authStore.fetchUser()
 
   if (authenticated) {
+    if (authStore.mustChangePassword && to.name !== 'change-password') {
+      return next({ name: 'change-password' })
+    }
     return next()
   }
 

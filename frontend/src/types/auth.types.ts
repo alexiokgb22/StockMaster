@@ -10,6 +10,7 @@ export interface LoginResponse {
   role: string
   permissions: string[]
   warehouseId: number | null
+  mustChangePassword: boolean
   message: string
 }
 
@@ -21,4 +22,5 @@ export interface UserInfo {
   roleId: number
   permissions: string[]
   warehouseId: number | null
+  mustChangePassword: boolean
 }

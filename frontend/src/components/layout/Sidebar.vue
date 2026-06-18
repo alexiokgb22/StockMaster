@@ -6,8 +6,8 @@ import { PERMISSIONS } from '@/utils/permissions'
 import {
   LayoutDashboard, Warehouse, Grid3X3, Package, Tag, Truck,
   BarChart3, ArrowLeftRight, ClipboardList, ShoppingCart,
-  FileText, Users, Shield, ChevronRight, Boxes,
-  AlertTriangle, Settings, LogOut, Layers
+  FileText, Users, Boxes,
+  Layers
 } from '@lucide/vue'
 
 defineProps<{ open: boolean }>()
@@ -94,99 +94,88 @@ function isActive(path: string) {
   </Transition>
 
   <!-- ── Sidebar panel ── -->
-  <Transition name="sidebar-mobile">
-    <aside
-      v-show="open || true"
-      :class="[
-        'fixed inset-y-0 left-0 z-50 flex flex-col',
-        'w-[260px]',
-        'lg:translate-x-0 lg:block',
-        open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      ]"
-      style="background: var(--gradient-sidebar)"
-    >
-      <!-- Logo -->
-      <div class="flex items-center gap-3 px-5 h-16 border-b border-white/10 shrink-0">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background: var(--gradient-primary)">
-          <BarChart3 class="w-5 h-5 text-primary" />
-        </div>
+  <aside
+    :class="[
+      'fixed inset-y-0 left-0 z-50 flex flex-col',
+      'w-[256px] transition-transform duration-250 ease-in-out',
+      open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+    ]"
+    style="background: var(--gradient-sidebar)"
+  >
+    <!-- Logo -->
+    <div class="flex items-center gap-3 px-5 h-[60px] border-b border-white/10 shrink-0">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background: var(--gradient-primary)">
+        <BarChart3 class="w-4.5 h-4.5 text-primary" />
+      </div>
+      <div>
+        <span class="text-white font-bold text-[15px] tracking-tight">StockMaster</span>
+        <span class="block text-[11px] font-medium" style="color: rgba(255,255,255,0.40)">WMS Platform</span>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex-1 overflow-y-auto py-5 px-3 space-y-6">
+      <template v-for="group in navGroups" :key="group.label">
         <div>
-          <span class="text-white font-extrabold text-base tracking-tight">StockMaster</span>
-          <span class="block text-xs font-medium" style="color: rgba(255,255,255,0.45)">WMS Platform</span>
+          <p v-if="group.label" class="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest" style="color: rgba(255,255,255,0.30)">
+            {{ group.label }}
+          </p>
+          <ul class="space-y-0.5">
+            <li v-for="item in group.items" :key="item.path">
+              <router-link
+                :to="item.path"
+                @click="emit('close')"
+                :class="[
+                  'relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-fast group overflow-hidden',
+                  isActive(item.path)
+                    ? 'text-white'
+                    : 'hover:bg-white/8 text-white/65 hover:text-white'
+                ]"
+                :style="isActive(item.path) ? 'background: rgba(248,216,48,0.13)' : ''"
+              >
+                <!-- Active indicator -->
+                <span
+                  v-if="isActive(item.path)"
+                  class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full"
+                  style="background: #F8D830"
+                />
+
+                <component
+                  :is="item.icon"
+                  class="w-[18px] h-[18px] shrink-0 transition-fast"
+                  :style="isActive(item.path) ? 'color: #F8D830' : ''"
+                />
+                <span :class="isActive(item.path) ? 'font-semibold text-white' : ''">
+                  {{ item.name }}
+                </span>
+
+                <!-- Badge -->
+                <span v-if="item.badge" class="ml-auto text-[10px] font-bold bg-error text-white px-1.5 py-0.5 rounded-full">
+                  {{ item.badge }}
+                </span>
+              </router-link>
+            </li>
+          </ul>
+        </div>
+      </template>
+    </nav>
+
+    <!-- Footer utilisateur -->
+    <div class="px-3 pb-4 pt-3 border-t border-white/10 shrink-0">
+      <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/8 transition-fast cursor-pointer">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[13px] font-bold" style="background: rgba(248,216,48,0.2); border: 1px solid rgba(248,216,48,0.3); color: #F8D830">
+          {{ authStore.user?.username?.[0]?.toUpperCase() || 'U' }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-white text-[13px] font-semibold truncate leading-tight">{{ authStore.user?.username }}</p>
+          <p class="text-[11px] truncate leading-tight" style="color: rgba(255,255,255,0.40)">{{ authStore.user?.role }}</p>
         </div>
       </div>
-
-      <!-- Navigation -->
-      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-5">
-        <template v-for="group in navGroups" :key="group.label">
-          <div>
-            <p v-if="group.label" class="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest" style="color: rgba(255,255,255,0.35)">
-              {{ group.label }}
-            </p>
-            <ul class="space-y-0.5">
-              <li v-for="item in group.items" :key="item.path">
-                <router-link
-                  :to="item.path"
-                  @click="emit('close')"
-                  :class="[
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-fast group',
-                    isActive(item.path)
-                      ? 'text-accent shadow-inner'
-                      : 'hover:bg-white/10'
-                  ]"
-                  :style="isActive(item.path) ? 'background: var(--sidebar-active)' : ''"
-                >
-                  <!-- Active bar -->
-                  <span v-if="isActive(item.path)" class="absolute left-0 w-1 h-6 rounded-r-full bg-accent" />
-
-                  <component
-                    :is="item.icon"
-                    :class="['w-4.5 h-4.5 shrink-0 transition-fast', isActive(item.path) ? 'text-accent' : 'text-white/60 group-hover:text-white']"
-                  />
-                  <span :class="[isActive(item.path) ? 'text-white font-semibold' : 'text-white/75 group-hover:text-white']">
-                    {{ item.name }}
-                  </span>
-
-                  <!-- Badge -->
-                  <span v-if="item.badge" class="ml-auto text-xs font-bold bg-error text-white px-1.5 py-0.5 rounded-full">
-                    {{ item.badge }}
-                  </span>
-
-                  <ChevronRight v-else-if="isActive(item.path)" class="ml-auto w-3.5 h-3.5 text-accent/70" />
-                </router-link>
-              </li>
-            </ul>
-          </div>
-        </template>
-      </nav>
-
-      <!-- Footer -->
-      <div class="px-3 pb-4 pt-3 border-t border-white/10 shrink-0">
-        <div class="flex items-center gap-3 px-3 py-2 rounded-lg">
-          <div class="w-8 h-8 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center shrink-0">
-            <span class="text-accent text-xs font-bold">{{ authStore.user?.username?.[0]?.toUpperCase() || 'U' }}</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-white text-sm font-semibold truncate">{{ authStore.user?.username }}</p>
-            <p class="text-xs truncate" style="color: rgba(255,255,255,0.45)">{{ authStore.user?.role }}</p>
-          </div>
-        </div>
-      </div>
-    </aside>
-  </Transition>
+    </div>
+  </aside>
 </template>
 
 <style scoped>
-.w-4\.5 { width: 1.125rem; }
-.h-4\.5 { height: 1.125rem; }
-
-.overlay-enter-active, .overlay-leave-active { transition: opacity 0.2s ease; }
-.overlay-enter-from, .overlay-leave-to { opacity: 0; }
-
-.sidebar-mobile-enter-active, .sidebar-mobile-leave-active { transition: transform 0.25s ease; }
-.sidebar-mobile-enter-from, .sidebar-mobile-leave-to { transform: translateX(-100%); }
-
-@media (min-width: 1024px) {
-  .sidebar-mobile-enter-from, .sidebar-mobile-leave-to { transform: translateX(0); }
-}
+.sidebar-mobile-enter-active, .sidebar-mobile-leave-active { transition: opacity 0.2s ease; }
+.sidebar-mobile-enter-from, .sidebar-mobile-leave-to { opacity: 0; }
 </style>

@@ -25,6 +25,7 @@ public class CustomUserDetails implements UserDetails {
     private final String roleName;
     private final Long roleId;
     private final boolean isActive;
+    private final boolean mustChangePassword;
     private final Collection<? extends GrantedAuthority> authorities;
     private final Long warehouseId;
 
@@ -36,6 +37,7 @@ public class CustomUserDetails implements UserDetails {
         this.roleName = user.getRole().getName();
         this.roleId = user.getRole().getId();
         this.isActive = user.getIsActive();
+        this.mustChangePassword = Boolean.TRUE.equals(user.getMustChangePassword());
         this.warehouseId = user.getAssignedWarehouse() != null ? user.getAssignedWarehouse().getId() : null;
         
         // Convertir les permissions en authorities Spring Security
