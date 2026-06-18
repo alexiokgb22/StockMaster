@@ -2,6 +2,7 @@ package com.backend.module.user.controller;
 
 import com.backend.module.user.dto.*;
 import com.backend.module.user.service.UserService;
+import com.backend.module.user.dto.AssignWarehouseRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -11,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -54,6 +57,29 @@ public class UserController {
     ) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return ResponseEntity.ok(userService.findStorekeepersByWarehouse(warehouseId, search, active, pageable));
+    }
+
+    /**
+     * Gestionnaires disponibles pour l'assignation à un entrepôt.
+     * Retourne les gestionnaires sans entrepôt + le gestionnaire actuel de l'entrepôt (si warehouseId fourni).
+     * Utilisé par le formulaire d'édition/création d'un entrepôt.
+     */
+    @GetMapping("/available-managers")
+    @PreAuthorize("hasAuthority('warehouse.update')")
+    public ResponseEntity<List<UserResponse>> getAvailableManagers(
+            @RequestParam(required = false) Long warehouseId
+    ) {
+        return ResponseEntity.ok(userService.findAvailableManagers(warehouseId));
+    }
+
+    /**
+     * Arbre hiérarchique : tous les entrepôts avec gestionnaire + magasiniers.
+     * Admin uniquement.
+     */
+    @GetMapping("/tree")
+    @PreAuthorize("hasAuthority('user.read')")
+    public ResponseEntity<List<WarehouseTreeNode>> getTree() {
+        return ResponseEntity.ok(userService.buildTree());
     }
 
     @GetMapping("/{id}")
@@ -151,5 +177,18 @@ public class UserController {
             @Valid @RequestBody AssignRoleRequest req
     ) {
         return ResponseEntity.ok(userService.assignRole(id, req));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // ASSIGNATION / DÉSAFFECTATION D'ENTREPÔT — ADMIN ONLY
+    // ──────────────────────────────────────────────────────────────
+
+    @PatchMapping("/{id}/warehouse")
+    @PreAuthorize("hasAuthority('user.assign_role')")
+    public ResponseEntity<UserResponse> assignWarehouse(
+            @PathVariable Long id,
+            @RequestBody AssignWarehouseRequest req
+    ) {
+        return ResponseEntity.ok(userService.assignWarehouse(id, req.getWarehouseId()));
     }
 }

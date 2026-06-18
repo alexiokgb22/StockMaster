@@ -12,6 +12,22 @@ export interface UserResponse {
   updatedAt: string
 }
 
+export interface UserSummary {
+  id: number
+  username: string
+  email: string
+  isActive: boolean
+}
+
+export interface WarehouseTreeNode {
+  warehouseId: number
+  warehouseName: string
+  warehouseCity: string
+  warehouseActive: boolean
+  manager: UserSummary | null
+  storekeepers: UserSummary[]
+}
+
 export interface CreateUserRequest {
   username: string
   email: string

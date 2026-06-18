@@ -1,5 +1,5 @@
 import http from './http'
-import type { CreateUserRequest, UpdateUserRequest, UserResponse } from '@/types/user.types'
+import type { CreateUserRequest, UpdateUserRequest, UserResponse, WarehouseTreeNode } from '@/types/user.types'
 
 const prefix = '/api/users'
 
@@ -33,4 +33,31 @@ export const userService = {
 
   assignRole: (id: number, roleId: number) =>
     http.patch<UserResponse>(`${prefix}/${id}/role`, { roleId }).then((response) => response.data),
+
+  assignWarehouse: (id: number, warehouseId: number | null) =>
+    http.patch<UserResponse>(`${prefix}/${id}/warehouse`, { warehouseId }).then((response) => response.data),
+
+  /**
+   * Gestionnaires disponibles pour l'assignation à un entrepôt.
+   * Retourne les gestionnaires sans entrepôt + le gestionnaire actuel de l'entrepôt cible.
+   * warehouseId null → création d'un entrepôt, retourne tous les gestionnaires libres.
+   */
+  availableManagers: (warehouseId?: number | null): Promise<UserResponse[]> =>
+    http
+      .get<UserResponse[]>(`${prefix}/available-managers`, {
+        params: warehouseId ? { warehouseId } : undefined,
+      })
+      .then((response) => response.data),
+
+  /** Arbre hiérarchique admin : entrepôts + gestionnaires + magasiniers. */
+  tree: (): Promise<WarehouseTreeNode[]> =>
+    http.get<WarehouseTreeNode[]>(`${prefix}/tree`).then((r) => r.data),
+
+  /** Gestionnaire : liste de ses magasiniers. */
+  storekeeperList: (warehouseId: number, params?: { search?: string; active?: boolean; page?: number; size?: number }) =>
+    http
+      .get<{ content: UserResponse[]; totalElements: number; totalPages: number }>(`${prefix}/storekeeper-list`, {
+        params: { warehouseId, ...params },
+      })
+      .then((r) => r.data),
 }

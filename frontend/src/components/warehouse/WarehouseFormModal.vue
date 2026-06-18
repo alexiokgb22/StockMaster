@@ -47,17 +47,22 @@
       </FormField>
 
       <!-- Gestionnaire -->
-      <FormField label="Gestionnaire" v-if="managers.length > 0">
+      <!-- Le select ne propose que les gestionnaires sans entrepôt
+           + le gestionnaire actuellement assigné (valeur courante).
+           Un gestionnaire déjà assigné à un autre entrepôt n'apparaît pas. -->
+      <FormField label="Gestionnaire">
+        <div v-if="loadingManagers" class="text-sm text-gray-400">Chargement…</div>
         <Select
+          v-else
           v-model="form.managerId"
           :options="managerOptions"
-          placeholder="Sélectionner un gestionnaire"
+          placeholder="Aucun gestionnaire"
         />
       </FormField>
 
       <!-- Boutons -->
       <div class="flex justify-end gap-3 border-t pt-4">
-        <Button variant="secondary" @click="$emit('close')">
+        <Button variant="secondary" type="button" @click="$emit('close')">
           Annuler
         </Button>
         <Button :loading="loading" type="submit">
@@ -90,64 +95,69 @@ interface Emits {
   (e: 'update'): void
 }
 
+const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const warehouseStore = useWarehouseStore()
 
 const loading = ref(false)
+const loadingManagers = ref(false)
 const error = ref<string | null>(null)
-const managers = ref<UserResponse[]>([])
+const availableManagers = ref<UserResponse[]>([])
 
 const form = reactive<{
   name: string
   address: string
   city: string
   totalCapacity: number | null
-  managerId?: number | null
+  managerId: number | null
 }>({
   name: '',
   address: '',
   city: '',
   totalCapacity: null,
-  managerId: undefined
+  managerId: null,
 })
 
 const errors = reactive<Record<string, string>>({})
 
-const managerOptions = computed(() =>
-  managers.value.map((m) => ({
+// Options du select : gestionnaires disponibles uniquement.
+// L'option "Aucun" (valeur null) est toujours présente pour désaffecter.
+const managerOptions = computed(() => [
+  { value: null, label: 'Aucun gestionnaire' },
+  ...availableManagers.value.map((m) => ({
     value: m.id,
-    label: m.username
-  }))
-)
+    label: m.username,
+  })),
+])
 
 const validateForm = () => {
-  errors.name = !form.name ? 'Le nom est requis' : ''
-  errors.address = !form.address ? 'L\'adresse est requise' : ''
+  errors.name = !form.name ? "Le nom est requis" : ''
+  errors.address = !form.address ? "L'adresse est requise" : ''
   errors.city = !form.city ? 'La ville est requise' : ''
   errors.totalCapacity = !form.totalCapacity ? 'La capacité est requise' : ''
-
   return !errors.name && !errors.address && !errors.city && !errors.totalCapacity
 }
 
 const handleSubmit = async () => {
   error.value = null
-
-  if (!validateForm()) {
-    return
-  }
+  if (!validateForm()) return
 
   loading.value = true
-
   try {
     if (props.warehouse) {
       // Modification
+      // managerId = null → convention pour désaffecter (backend : managerId = 0)
+      // managerId > 0    → réassignation
+      // Pour indiquer "pas de changement", on enverrait undefined —
+      // ici on envoie toujours la valeur courante du select pour être explicite.
       const updateData: UpdateWarehouseRequest = {
         name: form.name,
         address: form.address,
         city: form.city,
-        totalCapacity: form.totalCapacity || undefined,
-        managerId: form.managerId || undefined
+        totalCapacity: form.totalCapacity ?? undefined,
+        // Sentinel 0 = désaffecter ; valeur normale = réassigner
+        managerId: form.managerId === null ? 0 : form.managerId,
       }
       await warehouseStore.updateWarehouse(props.warehouse.id, updateData)
       emit('update')
@@ -158,36 +168,43 @@ const handleSubmit = async () => {
         address: form.address,
         city: form.city,
         totalCapacity: form.totalCapacity!,
-        managerId: form.managerId || undefined
+        managerId: form.managerId ?? undefined,
       }
       await warehouseStore.createWarehouse(createData)
       emit('create')
     }
   } catch (err: unknown) {
-    error.value = err instanceof Error ? err.message : 'Une erreur est survenue'
+    if (err && typeof err === 'object' && 'response' in err) {
+      const r = (err as { response?: { data?: { message?: string } } }).response
+      error.value = r?.data?.message ?? 'Une erreur est survenue'
+    } else {
+      error.value = 'Une erreur est survenue'
+    }
   } finally {
     loading.value = false
   }
 }
 
-const props = defineProps<Props>()
-
 onMounted(async () => {
-  // Charger les gestionnaires
-  try {
-    const response = await userService.list({ role: 'Gestionnaire d\'entrepôt', size: 100 })
-    managers.value = response.content
-  } catch (err) {
-    console.error('Erreur lors du chargement des gestionnaires', err)
-  }
-
   // Remplir le formulaire si modification
   if (props.warehouse) {
     form.name = props.warehouse.name
     form.address = props.warehouse.address
     form.city = props.warehouse.city
     form.totalCapacity = props.warehouse.totalCapacity
-    form.managerId = props.warehouse.managerId
+    form.managerId = props.warehouse.managerId ?? null
+  }
+
+  // Charger les gestionnaires disponibles :
+  // - sans entrepôt assigné
+  // - OU gestionnaire actuel de cet entrepôt (pour afficher la valeur courante)
+  loadingManagers.value = true
+  try {
+    availableManagers.value = await userService.availableManagers(props.warehouse?.id ?? null)
+  } catch {
+    // Non bloquant — le select reste vide
+  } finally {
+    loadingManagers.value = false
   }
 })
 </script>

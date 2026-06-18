@@ -22,5 +22,6 @@ export interface UserInfoResponse {
   roleId: number
   permissions: string[]
   warehouseId: number | null
+  warehouseName: string | null
   mustChangePassword: boolean
 }

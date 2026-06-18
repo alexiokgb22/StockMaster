@@ -19,6 +19,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -56,6 +59,70 @@ public class UserService {
         return toResponse(getUser(id));
     }
 
+    /**
+     * Gestionnaires disponibles pour l'assignation à un entrepôt.
+     * Retourne les gestionnaires sans entrepôt + le gestionnaire actuel de l'entrepôt cible.
+     * warehouseId null → création d'un entrepôt, retourne tous les gestionnaires libres.
+     */
+    @Transactional(readOnly = true)
+    public List<UserResponse> findAvailableManagers(Long warehouseId) {
+        return userRepository.findAvailableManagers(warehouseId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /**
+     * Arbre hiérarchique admin : tous les entrepôts avec leur gestionnaire et magasiniers.
+     * Retourne un nœud par entrepôt, incluant les entrepôts sans gestionnaire.
+     */
+    @Transactional(readOnly = true)
+    public List<WarehouseTreeNode> buildTree() {
+        // 1. Charger tous les entrepôts
+        List<Warehouse> warehouses = warehouseRepository.findAll(
+            org.springframework.data.domain.Sort.by("name")
+        );
+
+        if (warehouses.isEmpty()) return List.of();
+
+        List<Long> warehouseIds = warehouses.stream()
+                .map(Warehouse::getId)
+                .toList();
+
+        // 2. Charger tous les magasiniers de ces entrepôts en une seule requête
+        List<User> allStorekeepers = userRepository.findStorekeepersByWarehouseIds(warehouseIds);
+
+        // Grouper les magasiniers par warehouseId
+        Map<Long, List<User>> storekeepersByWarehouse = allStorekeepers.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        u -> u.getAssignedWarehouse().getId()
+                ));
+
+        // 3. Construire les nœuds
+        return warehouses.stream()
+                .map(w -> {
+                    List<WarehouseTreeNode.UserSummary> storekeepers = storekeepersByWarehouse
+                            .getOrDefault(w.getId(), List.of())
+                            .stream()
+                            .map(this::toSummary)
+                            .toList();
+
+                    WarehouseTreeNode.UserSummary manager = w.getManager() != null
+                            ? toSummary(w.getManager())
+                            : null;
+
+                    return WarehouseTreeNode.builder()
+                            .warehouseId(w.getId())
+                            .warehouseName(w.getName())
+                            .warehouseCity(w.getCity())
+                            .warehouseActive(w.getIsActive())
+                            .manager(manager)
+                            .storekeepers(storekeepers)
+                            .build();
+                })
+                .toList();
+    }
+
     // ─────────────────────────────────────────────────────────────
     // CRÉATION — ADMIN
     // L'admin choisit librement le rôle (tout sauf Administrateur).
@@ -73,6 +140,17 @@ public class UserService {
 
         Warehouse warehouse = resolveWarehouse(role, req.getWarehouseId());
 
+        // Vérification AVANT la création : si Gestionnaire d'Entrepôt, l'entrepôt
+        // cible ne doit pas avoir de manager. On utilise une requête JPQL directe
+        // pour contourner le cache Hibernate et avoir une valeur fraîche de la BDD.
+        if (warehouse != null && "Gestionnaire d'Entrepôt".equals(role.getName())) {
+            if (warehouseRepository.countManager(warehouse.getId()) > 0) {
+                throw new BusinessException(
+                    "L'entrepôt \"" + warehouse.getName() + "\" a déjà un gestionnaire assigné"
+                );
+            }
+        }
+
         User user = User.builder()
                 .username(req.getUsername())
                 .email(req.getEmail())
@@ -83,7 +161,16 @@ public class UserService {
                 .assignedWarehouse(warehouse)
                 .build();
 
-        return toResponse(userRepository.save(user));
+        User saved = userRepository.save(user);
+
+        // Synchroniser warehouse.manager pour que la colonne soit visible
+        // côté liste des entrepôts.
+        if (warehouse != null && "Gestionnaire d'Entrepôt".equals(role.getName())) {
+            warehouse.setManager(saved);
+            warehouseRepository.save(warehouse);
+        }
+
+        return toResponse(saved);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -168,6 +255,14 @@ public class UserService {
         }
 
         User user = getUser(id);
+
+        // Désaffecter l'utilisateur de l'entrepôt qu'il gère (si gestionnaire)
+        // avant la suppression pour éviter la contrainte FK warehouses.manager_id → users.id
+        warehouseRepository.findByManagerId(id).forEach(warehouse -> {
+            warehouse.setManager(null);
+            warehouseRepository.save(warehouse);
+        });
+
         userRepository.delete(user);
     }
 
@@ -199,6 +294,47 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(req.getNewPassword()));
         user.setMustChangePassword(false);
         userRepository.save(user);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ASSIGNATION / DÉSAFFECTATION D'ENTREPÔT
+    // Opération transactionnelle :
+    //   1. Désaffecte l'ancien entrepôt du manager (si existant)
+    //   2. Affecte le nouvel entrepôt (si warehouseId non null)
+    //      → vérifie que la cible n'a pas déjà un autre gestionnaire
+    // ─────────────────────────────────────────────────────────────
+
+    public UserResponse assignWarehouse(Long userId, Long warehouseId) {
+        User user = getUser(userId);
+
+        // 1. Désaffecter l'ancien entrepôt géré par cet utilisateur
+        warehouseRepository.findByManagerId(userId).forEach(old -> {
+            old.setManager(null);
+            warehouseRepository.save(old);
+        });
+
+        if (warehouseId == null) {
+            // Désaffectation pure
+            user.setAssignedWarehouse(null);
+        } else {
+            Warehouse target = warehouseRepository.findById(warehouseId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Entrepôt introuvable : " + warehouseId));
+
+            // Vérification fraîche en BDD (évite le cache Hibernate) :
+            // l'entrepôt cible ne doit pas avoir de gestionnaire autre que l'utilisateur courant.
+            if (warehouseRepository.countOtherManager(warehouseId, userId) > 0) {
+                throw new BusinessException(
+                    "L'entrepôt \"" + target.getName() + "\" a déjà un gestionnaire assigné"
+                );
+            }
+
+            // 2. Affecter le nouvel entrepôt
+            target.setManager(user);
+            warehouseRepository.save(target);
+            user.setAssignedWarehouse(target);
+        }
+
+        return toResponse(userRepository.save(user));
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -276,6 +412,15 @@ public class UserService {
                 .warehouseName(u.getAssignedWarehouse() != null ? u.getAssignedWarehouse().getName() : null)
                 .createdAt(u.getCreatedAt())
                 .updatedAt(u.getUpdatedAt())
+                .build();
+    }
+
+    private WarehouseTreeNode.UserSummary toSummary(User u) {
+        return WarehouseTreeNode.UserSummary.builder()
+                .id(u.getId())
+                .username(u.getUsername())
+                .email(u.getEmail())
+                .isActive(u.getIsActive())
                 .build();
     }
 }

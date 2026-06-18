@@ -22,7 +22,7 @@ public class WarehouseController {
     private final WarehouseService warehouseService;
 
     // ──────────────────────────────────────────────────────────────
-    // LECTURE
+    // LECTURE — liste paginée
     // ──────────────────────────────────────────────────────────────
 
     @GetMapping
@@ -30,12 +30,34 @@ public class WarehouseController {
     public ResponseEntity<Page<WarehouseResponse>> getAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) Boolean unassigned,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return ResponseEntity.ok(warehouseService.findAll(search, active, pageable));
+        return ResponseEntity.ok(warehouseService.findAll(search, active, unassigned, pageable));
     }
+
+    /**
+     * Entrepôts disponibles pour l'assignation d'un gestionnaire.
+     * - Sans paramètre : tous les entrepôts sans manager.
+     * - Avec managerId  : sans manager + entrepôt actuellement géré par cet utilisateur
+     *   (pour afficher la valeur courante dans le select).
+     */
+    @GetMapping("/unassigned")
+    @PreAuthorize("hasAuthority('warehouse.read')")
+    public ResponseEntity<Page<WarehouseResponse>> getUnassigned(
+            @RequestParam(required = false) Long managerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "100") int size
+    ) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+        return ResponseEntity.ok(warehouseService.findUnassigned(managerId, pageable));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // LECTURE — détail
+    // ──────────────────────────────────────────────────────────────
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('warehouse.read')")

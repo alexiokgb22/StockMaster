@@ -36,6 +36,12 @@ const routes = [
         meta: { permission: 'user.create' },
       },
       {
+        path: 'users/storekeeper/create',
+        name: 'StorekeeperCreate',
+        component: () => import('@/pages/users/StorekeeperCreatePage.vue'),
+        meta: { permission: 'user.create_storekeeper' },
+      },
+      {
         path: 'users/:id',
         name: 'UserDetail',
         component: () => import('@/pages/users/UserDetailPage.vue'),
@@ -51,13 +57,13 @@ const routes = [
         path: 'warehouses',
         name: 'Warehouses',
         component: () => import('@/pages/warehouses/WarehousesPage.vue'),
-        meta: { permission: 'warehouse.read' },
+        meta: { permission: 'warehouse.create' },
       },
       {
         path: 'warehouses/:id',
         name: 'WarehouseDetail',
         component: () => import('@/pages/warehouses/WarehouseDetailPage.vue'),
-        meta: { permission: 'warehouse.read' },
+        meta: { permission: 'warehouse.create' },
       },
       {
         path: 'forbidden',

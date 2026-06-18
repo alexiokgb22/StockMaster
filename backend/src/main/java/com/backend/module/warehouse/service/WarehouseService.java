@@ -14,7 +14,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -28,34 +27,47 @@ public class WarehouseService {
     // ─────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-public Page<WarehouseResponse> findAll(String search, Boolean active, Pageable pageable) {
+    public Page<WarehouseResponse> findAll(String search, Boolean active, Boolean unassigned, Pageable pageable) {
 
-    Page<Warehouse> warehouses;
+        // Cas spécial : entrepôts sans gestionnaire (pour le select de réassignation)
+        if (Boolean.TRUE.equals(unassigned)) {
+            return warehouseRepository.findByManagerIsNull(pageable).map(this::toResponse);
+        }
 
-    if (search != null && !search.isBlank() && active != null) {
-        warehouses = warehouseRepository
-            .findByIsActiveAndNameContainingIgnoreCaseOrCityContainingIgnoreCase(
-                active, search, search, pageable
-            );
+        Page<Warehouse> warehouses;
 
-    } else if (search != null && !search.isBlank()) {
-        warehouses = warehouseRepository
-            .findByNameContainingIgnoreCaseOrCityContainingIgnoreCase(search, search, pageable);
+        if (search != null && !search.isBlank() && active != null) {
+            warehouses = warehouseRepository
+                .findByIsActiveAndNameContainingIgnoreCaseOrCityContainingIgnoreCase(
+                    active, search, search, pageable
+                );
+        } else if (search != null && !search.isBlank()) {
+            warehouses = warehouseRepository
+                .findByNameContainingIgnoreCaseOrCityContainingIgnoreCase(search, search, pageable);
+        } else {
+            warehouses = warehouseRepository.findAll(pageable);
+        }
 
-    } else if (active != null) {
-        warehouses = warehouseRepository.findAll(pageable)
-            .map(w -> w); // pas idéal, voir option 2
-
-    } else {
-        warehouses = warehouseRepository.findAll(pageable);
+        return warehouses.map(this::toResponse);
     }
-
-    return warehouses.map(this::toResponse);
-}
 
     @Transactional(readOnly = true)
     public WarehouseResponse findById(Long id) {
         return toResponse(getWarehouse(id));
+    }
+
+    /**
+     * Entrepôts disponibles pour l'assignation d'un gestionnaire.
+     * - Si managerId est fourni : retourne les entrepôts sans manager + l'entrepôt actuel du manager
+     *   (pour que le select affiche la valeur courante et les cibles disponibles).
+     * - Sinon : retourne uniquement les entrepôts sans manager.
+     */
+    @Transactional(readOnly = true)
+    public Page<WarehouseResponse> findUnassigned(Long managerId, Pageable pageable) {
+        Page<Warehouse> warehouses = managerId != null
+            ? warehouseRepository.findUnassignedOrManagedBy(managerId, pageable)
+            : warehouseRepository.findByManagerIsNull(pageable);
+        return warehouses.map(this::toResponse);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -100,24 +112,79 @@ public Page<WarehouseResponse> findAll(String search, Boolean active, Pageable p
             warehouse.setName(req.getName());
         }
 
-        if (req.getAddress() != null) {
-            warehouse.setAddress(req.getAddress());
-        }
+        if (req.getAddress() != null) warehouse.setAddress(req.getAddress());
+        if (req.getCity() != null)    warehouse.setCity(req.getCity());
+        if (req.getTotalCapacity() != null) warehouse.setTotalCapacity(req.getTotalCapacity());
 
-        if (req.getCity() != null) {
-            warehouse.setCity(req.getCity());
-        }
-
-        if (req.getTotalCapacity() != null) {
-            warehouse.setTotalCapacity(req.getTotalCapacity());
-        }
-
+        // ── Changement de gestionnaire ──────────────────────────────────────────
+        // Le champ managerId dans le DTO est traité en "patch sémantique" :
+        //   • non présent dans la requête (null)   → on ne touche pas au manager actuel
+        //   • présent mais valeur 0 ou -1 (sentinel) → désaffectation
+        //   • présent avec un id valide              → réassignation
+        //
+        // Ici on utilise la convention : managerId = null → pas de changement,
+        // managerId = 0 → désaffectation, managerId > 0 → réassignation.
         if (req.getManagerId() != null) {
-            User manager = userRepository.findById(req.getManagerId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Gestionnaire introuvable : " + req.getManagerId()));
-            warehouse.setManager(manager);
+
+            User currentManager = warehouse.getManager();
+
+            if (req.getManagerId() == 0) {
+                // ── Désaffectation pure ──────────────────────────────────────────
+                if (currentManager != null) {
+                    currentManager.setAssignedWarehouse(null);
+                    userRepository.save(currentManager);
+                    warehouse.setManager(null);
+                }
+
+            } else {
+                // ── Réassignation ────────────────────────────────────────────────
+                Long newManagerId = req.getManagerId();
+
+                // Pas de changement si c'est déjà le même gestionnaire
+                if (currentManager == null || !currentManager.getId().equals(newManagerId)) {
+
+                    User newManager = userRepository.findById(newManagerId)
+                            .orElseThrow(() -> new ResourceNotFoundException(
+                                    "Gestionnaire introuvable : " + newManagerId));
+
+                    // Vérifier (en BDD fraîche) que le nouveau gestionnaire
+                    // n'est pas déjà assigné à un autre entrepôt
+                    if (warehouseRepository.countOtherManager(id, newManagerId) > 0) {
+                        throw new BusinessException(
+                                "Ce gestionnaire est déjà assigné à un autre entrepôt");
+                    }
+
+                    // 1. Désaffecter l'ancien manager de cet entrepôt
+                    if (currentManager != null) {
+                        currentManager.setAssignedWarehouse(null);
+                        userRepository.save(currentManager);
+                    }
+
+                    // 2. Désaffecter le nouveau manager de son entrepôt précédent
+                    warehouseRepository.findByManagerId(newManagerId).forEach(oldWarehouse -> {
+                        oldWarehouse.setManager(null);
+                        warehouseRepository.save(oldWarehouse);
+                    });
+
+                    // 3. Affecter le nouveau manager
+                    warehouse.setManager(newManager);
+                    newManager.setAssignedWarehouse(warehouse);
+                    userRepository.save(newManager);
+                }
+            }
         }
 
+        return toResponse(warehouseRepository.save(warehouse));
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // DÉSAFFECTATION DU MANAGER
+    // Retire le manager d'un entrepôt sans supprimer l'entrepôt.
+    // ─────────────────────────────────────────────────────────────
+
+    public WarehouseResponse removeManager(Long warehouseId) {
+        Warehouse warehouse = getWarehouse(warehouseId);
+        warehouse.setManager(null);
         return toResponse(warehouseRepository.save(warehouse));
     }
 

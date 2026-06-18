@@ -96,6 +96,7 @@ public class AuthService {
                 .roleId(userDetails.getRoleId())
                 .permissions(permissions)
                 .warehouseId(userDetails.getWarehouseId())
+                .warehouseName(userDetails.getWarehouseName())
                 .mustChangePassword(userDetails.isMustChangePassword())
                 .build();
     }

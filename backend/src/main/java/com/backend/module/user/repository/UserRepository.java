@@ -66,4 +66,38 @@ public interface UserRepository extends JpaRepository<User, Long> {
         @Param("active") Boolean active,
         Pageable pageable
     );
+
+    /**
+     * Gestionnaires disponibles pour l'assignation à un entrepôt.
+     * Retourne les gestionnaires :
+     *   - sans entrepôt assigné (assignedWarehouse IS NULL)
+     *   - OU dont l'entrepôt assigné est l'entrepôt cible (valeur courante à inclure dans le select)
+     * warehouseId peut être null (création d'un entrepôt) → retourne tous les gestionnaires libres.
+     */
+    @Query("""
+        SELECT u FROM User u
+        JOIN FETCH u.role r
+        LEFT JOIN FETCH u.assignedWarehouse w
+        WHERE r.name = 'Gestionnaire d''Entrepôt'
+          AND u.isActive = true
+          AND (
+            u.assignedWarehouse IS NULL
+            OR (:warehouseId IS NOT NULL AND u.assignedWarehouse.id = :warehouseId)
+          )
+        ORDER BY u.username ASC
+        """)
+    List<User> findAvailableManagers(@Param("warehouseId") Long warehouseId);
+
+    /**
+     * Magasiniers d'une liste d'entrepôts — utilisé pour construire l'arbre hiérarchique.
+     */
+    @Query("""
+        SELECT u FROM User u
+        JOIN FETCH u.role r
+        JOIN FETCH u.assignedWarehouse w
+        WHERE r.name = 'Magasinier'
+          AND w.id IN :warehouseIds
+        ORDER BY w.id ASC, u.username ASC
+        """)
+    List<User> findStorekeepersByWarehouseIds(@Param("warehouseIds") List<Long> warehouseIds);
 }
