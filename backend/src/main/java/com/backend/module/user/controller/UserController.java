@@ -133,6 +133,13 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('user.delete')")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
     // ──────────────────────────────────────────────────────────────
     // ATTRIBUTION DE RÔLE — ADMIN ONLY
     // ──────────────────────────────────────────────────────────────

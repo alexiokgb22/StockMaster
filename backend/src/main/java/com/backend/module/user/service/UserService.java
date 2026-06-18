@@ -161,6 +161,16 @@ public class UserService {
         return toResponse(userRepository.save(user));
     }
 
+    public void deleteUser(Long id) {
+        CustomUserDetails caller = currentUser();
+        if (caller.getId().equals(id)) {
+            throw new BusinessException("Vous ne pouvez pas supprimer votre propre compte");
+        }
+
+        User user = getUser(id);
+        userRepository.delete(user);
+    }
+
     /**
      * Gestionnaire : toggle uniquement les magasiniers de son entrepôt.
      */

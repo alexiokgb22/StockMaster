@@ -20,6 +20,8 @@ import com.backend.module.role.repository.RoleRepository;
 @Service
 public class PermissionSeedService {
 
+    private static final Set<String> FORBIDDEN_PERMISSIONS = Set.of("user.reset_password");
+
     private final PermissionRepository permissionRepository;
     private final RoleRepository roleRepository;
 
@@ -66,6 +68,7 @@ public class PermissionSeedService {
 
         // 2. Créer les rôles et leur affecter les permissions
         seedRoles(persistedPermissions);
+        removeRestrictedPermissionsFromRoles(persistedPermissions);
         
         System.out.println("===============================================");
         System.out.println("SEED DES PERMISSIONS ET RÔLES TERMINÉ");
@@ -75,11 +78,13 @@ public class PermissionSeedService {
     private void seedRoles(Set<Permission> all) {
 
         // Administrateur
-        // Accès total : toutes les permissions sans exception.
-        // Seul à pouvoir créer des entrepôts, des gestionnaires, des auditeurs,
-        // désactiver n'importe quel compte, et lire les rapports d'audit.
+        // Accès total : toutes les permissions sans exception,
+        // à l'exception de la réinitialisation de mot de passe par les créateurs.
         Role adminRole = findOrCreateRole("Administrateur", "Accès complet au système");
-        assignPermissions(adminRole, all);
+        Set<Permission> adminPermissions = all.stream()
+            .filter(permission -> !FORBIDDEN_PERMISSIONS.contains(permission.getCode()))
+            .collect(Collectors.toSet());
+        assignPermissions(adminRole, adminPermissions);
 
         // Gestionnaire d'entrepôt
         // Pilote, configure et supervise son entrepôt. Valide les opérations.
@@ -196,5 +201,18 @@ public class PermissionSeedService {
         return all.stream()
             .filter(p -> codes.contains(p.getCode()))
             .collect(Collectors.toSet());
+    }
+
+    private void removeRestrictedPermissionsFromRoles(Set<Permission> all) {
+        Set<Permission> restricted = filter(all, List.copyOf(FORBIDDEN_PERMISSIONS));
+        if (restricted.isEmpty()) {
+            return;
+        }
+
+        for (Role role : roleRepository.findAll()) {
+            if (role.getPermissions().removeAll(restricted)) {
+                roleRepository.save(role);
+            }
+        }
     }
 }

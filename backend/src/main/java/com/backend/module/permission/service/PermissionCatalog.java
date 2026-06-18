@@ -18,6 +18,7 @@ public final class PermissionCatalog {
             new PermissionDefinition("user", "create",               "user.create",               "Créer un utilisateur",                   "Créer un utilisateur avec n'importe quel rôle (admin uniquement)"),
             new PermissionDefinition("user", "update",               "user.update",               "Modifier un utilisateur",                "Modifier les informations d'un utilisateur"),
             new PermissionDefinition("user", "toggle",               "user.toggle",               "Activer / désactiver un utilisateur",    "Activer ou désactiver n'importe quel compte (admin uniquement)"),
+            new PermissionDefinition("user", "delete",               "user.delete",               "Supprimer un utilisateur",               "Supprimer un utilisateur (admin uniquement)"),
             new PermissionDefinition("user", "reset_password",       "user.reset_password",       "Réinitialiser un mot de passe",          "Réinitialiser le mot de passe d'un utilisateur"),
             new PermissionDefinition("user", "assign_role",          "user.assign_role",          "Attribuer un rôle",                      "Assigner n'importe quel rôle à un utilisateur (admin uniquement)"),
             new PermissionDefinition("user", "create_storekeeper",   "user.create_storekeeper",   "Créer un magasinier",                    "Créer un compte magasinier dans son entrepôt (gestionnaire uniquement, périmètre vérifié en service)"),
