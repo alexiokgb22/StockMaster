@@ -56,7 +56,7 @@ const loadMetrics = async () => {
     ])
     usersCount.value = users.content.length
     rolesCount.value = roles.length
-    warehousesCount.value = warehouses.length
+    warehousesCount.value = warehouses.content.length
   } catch {}
 }
 

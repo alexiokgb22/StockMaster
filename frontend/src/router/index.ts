@@ -54,6 +54,12 @@ const routes = [
         meta: { permission: 'warehouse.read' },
       },
       {
+        path: 'warehouses/:id',
+        name: 'WarehouseDetail',
+        component: () => import('@/pages/warehouses/WarehouseDetailPage.vue'),
+        meta: { permission: 'warehouse.read' },
+      },
+      {
         path: 'forbidden',
         name: 'Forbidden',
         component: () => import('@/pages/ForbiddenView.vue'),

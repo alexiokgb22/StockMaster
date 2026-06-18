@@ -7,7 +7,27 @@
         <div>
           <BaseInput label="Nom d’utilisateur" v-model="form.username" placeholder="sophie" />
           <BaseInput label="Email" v-model="form.email" type="email" placeholder="sophie@example.com" />
-          <BaseSelect label="Entrepôt" v-model="form.warehouseId" :options="warehouseOptions" optional />
+          <div class="space-y-3">
+            <div v-if="form.warehouseId && !showWarehouseSelect" class="rounded-lg border border-border bg-surface p-4">
+              <div class="text-sm text-text-secondary">Entrepôt actuellement assigné</div>
+              <div class="mt-2 text-base font-medium text-text-main">{{ currentWarehouseLabel }}</div>
+              <BaseButton type="button" variant="ghost" class="mt-3" @click="showWarehouseSelect = true">
+                Assigner à un autre entrepôt
+              </BaseButton>
+            </div>
+            <div v-else>
+              <BaseSelect label="Entrepôt" v-model="form.warehouseId" :options="warehouseOptions" optional />
+              <BaseButton
+                v-if="form.warehouseId"
+                type="button"
+                variant="secondary"
+                class="mt-2"
+                @click="form.warehouseId = null"
+              >
+                Désaffecter l'entrepôt
+              </BaseButton>
+            </div>
+          </div>
         </div>
         <div>
           <BaseSelect label="Rôle" v-model="selectedRoleId" :options="roleOptions" optional />
@@ -33,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref,computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -65,6 +85,20 @@ const form = reactive({
 
 const userId = Number(route.params.id)
 
+const showWarehouseSelect = ref(false)
+
+const currentWarehouseLabel = computed(() => {
+  const assigned = warehouseOptions.value.find((option) => option.value === form.warehouseId)
+  return assigned ? assigned.label : null
+})
+
+const availableWarehouses = computed(() => {
+  return warehouseOptions.value.filter((option) => {
+    if (!form.warehouseId) return true
+    return option.value === form.warehouseId || option.label.includes('(Non assigné)')
+  })
+})
+
 const loadData = async () => {
   loading.value = true
   try {
@@ -79,7 +113,9 @@ const loadData = async () => {
     form.warehouseId = userResponse.warehouseId
     selectedRoleId.value = userResponse.roleId
     roleOptions.value = roles.map((role) => ({ label: role.name, value: role.id }))
-    warehouseOptions.value = warehouses.map((warehouse) => ({ label: `${warehouse.name} (${warehouse.city})`, value: warehouse.id }))
+    warehouseOptions.value = warehouses.content
+      .filter((warehouse) => !warehouse.managerId || warehouse.id === userResponse.warehouseId)
+      .map((warehouse) => ({ label: `${warehouse.name} (${warehouse.city})`, value: warehouse.id }))
   } finally {
     loading.value = false
   }

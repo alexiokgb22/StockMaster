@@ -107,7 +107,7 @@
           >
             <td class="px-6 py-4 text-sm text-gray-900">
               <router-link
-                :to="{ name: 'WarehouseDetail', params: { id: warehouse.id } }"
+                :to="`/warehouses/${warehouse.id}`"
                 class="font-medium text-blue-600 hover:underline"
               >
                 {{ warehouse.name }}
@@ -195,9 +195,9 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { usePermissions } from '@/composables/usePermissions'
 import PageHeader from '@/components/ui/PageHeader.vue'
-import Input from '@/components/ui/BaseInput.vue'
-import Button from '@/components/ui/BaseButton.vue'
-import Badge from '@/components/ui/StatusBadge.vue'
+import Input from '@/components/ui/Input.vue'
+import Button from '@/components/ui/Button.vue'
+import Badge from '@/components/ui/Badge.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'

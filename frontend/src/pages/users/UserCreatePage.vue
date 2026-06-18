@@ -49,9 +49,9 @@ const form = reactive<CreateUserRequest>({
 const loadReferences = async () => {
   loading.value = true
   try {
-    const [roles, warehouses] = await Promise.all([roleService.list(), warehouseService.list()])
+    const [roles, warehouseResponse] = await Promise.all([roleService.list(), warehouseService.list()])
     roleOptions.value = roles.map((role) => ({ label: role.name, value: role.id }))
-    warehouseOptions.value = warehouses.map((warehouse) => ({ label: `${warehouse.name} (${warehouse.city})`, value: warehouse.id }))
+    warehouseOptions.value = warehouseResponse.content.map((warehouse) => ({ label: `${warehouse.name} (${warehouse.city})`, value: warehouse.id }))
   } finally {
     loading.value = false
   }
