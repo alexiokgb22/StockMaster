@@ -92,11 +92,13 @@ const adminLinks = computed(() =>
 // Gestion : magasiniers (gestionnaire d'entrepôt uniquement)
 // On vérifie le rôle ET la permission pour plus de sécurité
 const managerLinks = computed(() => {
-  if (currentUser.value?.role !== "Gestionnaire d'entrepôt") {
-    return []
-  }
+  if (currentUser.value?.role !== "Gestionnaire d'entrepôt") return []
+  const wid = currentUser.value?.warehouseId
   return filterLinks([
     { title: 'Magasiniers', to: { name: 'Storekeepers' }, permission: 'user.create_storekeeper' },
+    ...(wid != null
+      ? [{ title: 'Mon entrepôt', to: { name: 'WarehouseDetail', params: { id: wid } }, permission: 'warehouse.read' }]
+      : []),
   ])
 })
 

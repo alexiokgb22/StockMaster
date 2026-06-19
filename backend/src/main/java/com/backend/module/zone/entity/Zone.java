@@ -1,9 +1,11 @@
 package com.backend.module.zone.entity;
 
+import com.backend.module.category.entity.Category;
 import com.backend.module.shared.entity.BaseEntity;
 import com.backend.module.shared.enums.ZoneType;
 import com.backend.module.stock.entity.Stock;
 import com.backend.module.stockmovement.entity.StockMovement;
+import com.backend.module.user.entity.User;
 import com.backend.module.warehouse.entity.Warehouse;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
@@ -45,16 +47,27 @@ public class Zone extends BaseEntity {
     @Column(name = "name", nullable = false, length = 150)
     private String name;
 
+    @Column(name = "sequence_number", nullable = false)
+    private Integer sequenceNumber;
+
     @Column(name = "capacity")
     private Double capacity;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "zone_type", nullable = false)
+    @Column(name = "zone_type")
     private ZoneType zoneType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id", nullable = false)
     private Warehouse warehouse;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private User createdBy;
 
     @OneToMany(mappedBy = "zone", fetch = FetchType.LAZY)
     @JsonIgnore

@@ -5,6 +5,7 @@ import java.util.Set;
 
 import com.backend.module.activityreport.entity.ActivityReport;
 import com.backend.module.auditreport.entity.AuditReport;
+import com.backend.module.category.entity.Category;
 import com.backend.module.inventory.entity.Inventory;
 import com.backend.module.purchaseorder.entity.PurchaseOrder;
 import com.backend.module.shared.entity.BaseEntity;
@@ -105,4 +106,10 @@ public class Warehouse extends BaseEntity {
     @JsonIgnore
     @Builder.Default
     private Set<AuditReport> auditReports = new HashSet<>();
+
+    // Catégories affectées à cet entrepôt
+    @OneToMany(mappedBy = "warehouse", fetch = FetchType.LAZY)
+    @JsonIgnore
+    @Builder.Default
+    private Set<Category> categories = new HashSet<>();
 }
