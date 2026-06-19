@@ -23,7 +23,7 @@
           />
 
           <!-- ── Section entrepôt (uniquement pour Gestionnaire et Magasinier) ── -->
-          <div v-if="user && (user.roleName === 'Gestionnaire d\'Entrepôt' || user.roleName === 'Magasinier')" class="space-y-3">
+          <div v-if="user && (user.roleName === 'Gestionnaire d\'entrepôt' || user.roleName === 'Magasinier')" class="space-y-3">
 
             <!-- CAS 1 : aucun entrepôt actuellement assigné -->
             <template v-if="!currentWarehouse">
@@ -226,7 +226,7 @@ const loadData = async () => {
     roleOptions.value = roles.map((role) => ({ label: role.name, value: role.id }))
     
     // Charger les entrepôts selon le rôle de l'utilisateur
-    if (userResponse.roleName === 'Gestionnaire d\'Entrepôt') {
+    if (userResponse.roleName === 'Gestionnaire d\'entrepôt') {
       // Pour un gestionnaire : entrepôts sans manager + son entrepôt actuel
       const unassigned = await warehouseService.listUnassigned({ managerId: userId })
       unassignedWarehouses.value = unassigned.content

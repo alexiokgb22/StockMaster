@@ -104,11 +104,15 @@ public class AuthService {
     /**
      * Permet à l'utilisateur connecté de changer son propre mot de passe.
      * Remet mustChangePassword à false.
+     * Récupère l'id directement depuis le SecurityContext pour éviter
+     * un cast dans le contrôleur (problème ClassCastException avec DevTools).
      */
     @Transactional
-    public void changeOwnPassword(Long userId, String newPassword) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
+    public void changeOwnPassword(String newPassword) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName(); // getName() retourne toujours la String, sans cast
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable : " + username));
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setMustChangePassword(false);
         userRepository.save(user);

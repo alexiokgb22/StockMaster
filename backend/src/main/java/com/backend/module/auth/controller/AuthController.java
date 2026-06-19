@@ -2,7 +2,6 @@ package com.backend.module.auth.controller;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,7 +15,6 @@ import com.backend.module.auth.dto.LoginResponse;
 import com.backend.module.auth.dto.UserInfoResponse;
 import com.backend.module.auth.service.AuthService;
 import com.backend.module.user.dto.ResetPasswordRequest;
-import com.backend.security.CustomUserDetails;
 import com.backend.security.JwtTokenProvider;
 
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -104,12 +102,13 @@ public class AuthController {
     /**
      * Endpoint pour que l'utilisateur change son propre mot de passe (première connexion).
      * Remet mustChangePassword à false une fois le changement effectué.
+     *
+     * On passe par le service pour récupérer l'id depuis le SecurityContext,
+     * ce qui évite un cast direct dans le contrôleur (fragile avec DevTools).
      */
     @PostMapping("/change-password")
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ResetPasswordRequest req) {
-        CustomUserDetails current = (CustomUserDetails)
-                SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        authService.changeOwnPassword(current.getId(), req.getNewPassword());
+        authService.changeOwnPassword(req.getNewPassword());
         return ResponseEntity.noContent().build();
     }
 

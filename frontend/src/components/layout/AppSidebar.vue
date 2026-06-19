@@ -38,7 +38,7 @@
 
     <!-- Carte entrepôt — visible pour gestionnaire et magasinier -->
     <div
-      v-if="currentUser?.warehouseName && (currentUser.role === 'Gestionnaire d\'Entrepôt' || currentUser.role === 'Magasinier')"
+      v-if="currentUser?.warehouseName && (currentUser.role === 'Gestionnaire d\'entrepôt' || currentUser.role === 'Magasinier')"
       class="mt-6 mx-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-4"
     >
       <div class="flex items-start gap-3">
@@ -49,7 +49,7 @@
         </div>
         <div class="flex-1 min-w-0">
           <div class="text-xs font-medium uppercase tracking-wide text-accent mb-1">
-            {{ currentUser.role === 'Gestionnaire d\'Entrepôt' ? 'Mon entrepôt' : 'Affecté à' }}
+            {{ currentUser.role === 'Gestionnaire d\'entrepôt' ? 'Mon entrepôt' : 'Affecté à' }}
           </div>
           <div class="text-sm font-semibold text-white truncate">{{ currentUser.warehouseName }}</div>
           <div v-if="currentUser.warehouseCity" class="text-xs text-white/60 mt-0.5">
@@ -92,7 +92,7 @@ const adminLinks = computed(() =>
 // Gestion : magasiniers (gestionnaire d'entrepôt uniquement)
 // On vérifie le rôle ET la permission pour plus de sécurité
 const managerLinks = computed(() => {
-  if (currentUser.value?.role !== "Gestionnaire d'Entrepôt") {
+  if (currentUser.value?.role !== "Gestionnaire d'entrepôt") {
     return []
   }
   return filterLinks([

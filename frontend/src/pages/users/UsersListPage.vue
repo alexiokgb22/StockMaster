@@ -245,7 +245,7 @@ const { currentUser } = useAuth()
 
 // ── Rôle courant ───────────────────────────────────────────────────
 const isAdmin      = computed(() => currentUser.value?.role === 'Administrateur')
-const isManager    = computed(() => currentUser.value?.role === "Gestionnaire d'Entrepôt")
+const isManager    = computed(() => currentUser.value?.role === "Gestionnaire d'entrepôt")
 
 // ── État commun ────────────────────────────────────────────────────
 const search  = ref('')

@@ -149,9 +149,9 @@ public class UserService {
 
         Warehouse warehouse = resolveWarehouse(role, req.getWarehouseId());
 
-        // Vérification AVANT la création : si Gestionnaire d'Entrepôt, l'entrepôt
+        // Vérification AVANT la création : si Gestionnaire d'entrepôt, l'entrepôt
         // cible ne doit pas avoir de manager.
-        if (warehouse != null && "Gestionnaire d'Entrepôt".equals(role.getName())) {
+        if (warehouse != null && "Gestionnaire d'entrepôt".equals(role.getName())) {
             if (warehouse.getManager() != null) {
                 throw new BusinessException(
                     "L'entrepôt \"" + warehouse.getName() + "\" a déjà un gestionnaire assigné"
@@ -177,7 +177,7 @@ public class UserService {
         User saved = userRepository.save(user);
 
         // Synchronisation bidirectionnelle : mettre à jour warehouse.manager
-        if (warehouse != null && "Gestionnaire d'Entrepôt".equals(role.getName())) {
+        if (warehouse != null && "Gestionnaire d'entrepôt".equals(role.getName())) {
             warehouse.setManager(saved);
             warehouseRepository.save(warehouse);
         }
@@ -335,7 +335,7 @@ public class UserService {
         String userRole = user.getRole().getName();
 
         // 1. Désaffecter l'ancien entrepôt géré par cet utilisateur (si gestionnaire)
-        if ("Gestionnaire d'Entrepôt".equals(userRole)) {
+        if ("Gestionnaire d'entrepôt".equals(userRole)) {
             warehouseRepository.findByManagerId(userId).forEach(old -> {
                 old.setManager(null);
                 warehouseRepository.save(old);
@@ -352,9 +352,9 @@ public class UserService {
             Warehouse target = warehouseRepository.findById(warehouseId)
                     .orElseThrow(() -> new ResourceNotFoundException("Entrepôt introuvable : " + warehouseId));
 
-            // Vérification UNIQUEMENT pour les Gestionnaires d'Entrepôt :
+            // Vérification UNIQUEMENT pour les Gestionnaires d'entrepôt :
             // l'entrepôt cible ne doit pas avoir de gestionnaire autre que l'utilisateur courant.
-            if ("Gestionnaire d'Entrepôt".equals(userRole)) {
+            if ("Gestionnaire d'entrepôt".equals(userRole)) {
                 if (warehouseRepository.countOtherManager(warehouseId, userId) > 0) {
                     throw new BusinessException(
                         "L'entrepôt \"" + target.getName() + "\" a déjà un gestionnaire assigné"
