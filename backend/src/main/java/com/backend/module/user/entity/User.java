@@ -80,6 +80,11 @@ public class User extends BaseEntity {
     @JoinColumn(name = "warehouse_id")
     private Warehouse assignedWarehouse;
 
+    // Utilisateur qui a créé ce compte (admin ou gestionnaire)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private User createdBy;
+
     // --- Relations inverses ---
 
     @OneToMany(mappedBy = "createdBy", fetch = FetchType.LAZY)

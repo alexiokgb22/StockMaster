@@ -52,14 +52,32 @@ public interface UserRepository extends JpaRepository<User, Long> {
         Pageable pageable
     );
 
+    /**
+     * Magasiniers d'un entrepôt (actuels ET anciens pour historique).
+     * Retourne :
+     * - Les magasiniers actuellement dans l'entrepôt
+     * - Les magasiniers qui ont été dans l'entrepôt (historique)
+     * Ordonnés : actuels en premier, puis anciens par nom.
+     */
     @Query("""
-        SELECT u FROM User u
+        SELECT DISTINCT u FROM User u
         JOIN FETCH u.role r
         LEFT JOIN FETCH u.assignedWarehouse w
-        WHERE u.assignedWarehouse.id = :warehouseId
-          AND r.name = 'Magasinier'
+        LEFT JOIN FETCH u.createdBy creator
+        WHERE r.name = 'Magasinier'
+          AND (
+            u.assignedWarehouse.id = :warehouseId
+            OR EXISTS (
+              SELECT h FROM UserWarehouseHistory h
+              WHERE h.user.id = u.id
+                AND h.warehouse.id = :warehouseId
+            )
+          )
           AND (:search IS NULL OR LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:active IS NULL OR u.isActive = :active)
+        ORDER BY 
+          CASE WHEN u.assignedWarehouse.id = :warehouseId THEN 0 ELSE 1 END,
+          u.username ASC
         """)
     Page<User> findStorekeepersByWarehouse(
         @Param("warehouseId") Long warehouseId,

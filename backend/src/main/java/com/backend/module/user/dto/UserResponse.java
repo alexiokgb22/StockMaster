@@ -17,6 +17,15 @@ public class UserResponse {
     private Long roleId;
     private Long warehouseId;
     private String warehouseName;
+    
+    // Traçabilité du créateur
+    private Long createdById;
+    private String createdByUsername;
+    private String createdByRole;
+    
+    // Pour l'affichage dans la liste des magasiniers du gestionnaire
+    private Boolean isCurrentlyInWarehouse;
+    
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

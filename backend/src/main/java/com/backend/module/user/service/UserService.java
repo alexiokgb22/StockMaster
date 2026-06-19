@@ -31,6 +31,7 @@ public class UserService {
     private final RoleRepository     roleRepository;
     private final WarehouseRepository warehouseRepository;
     private final PasswordEncoder    passwordEncoder;
+    private final UserWarehouseHistoryService historyService;
 
     // ─────────────────────────────────────────────────────────────
     // LECTURE
@@ -51,7 +52,15 @@ public class UserService {
     @Transactional(readOnly = true)
     public Page<UserResponse> findStorekeepersByWarehouse(Long warehouseId, String search, Boolean active, Pageable pageable) {
         return userRepository.findStorekeepersByWarehouse(warehouseId, search, active, pageable)
-                .map(this::toResponse);
+                .map(u -> {
+                    UserResponse response = toResponse(u);
+                    // Calculer si le magasinier est actuellement dans cet entrepôt
+                    response.setIsCurrentlyInWarehouse(
+                        u.getAssignedWarehouse() != null && 
+                        u.getAssignedWarehouse().getId().equals(warehouseId)
+                    );
+                    return response;
+                });
     }
 
     @Transactional(readOnly = true)
@@ -150,6 +159,10 @@ public class UserService {
             }
         }
 
+        // Récupérer l'utilisateur connecté (créateur)
+        CustomUserDetails creator = currentUser();
+        User createdBy = creator != null ? getUser(creator.getId()) : null;
+
         User user = User.builder()
                 .username(req.getUsername())
                 .email(req.getEmail())
@@ -158,6 +171,7 @@ public class UserService {
                 .mustChangePassword(true)
                 .role(role)
                 .assignedWarehouse(warehouse)
+                .createdBy(createdBy)
                 .build();
 
         User saved = userRepository.save(user);
@@ -166,6 +180,11 @@ public class UserService {
         if (warehouse != null && "Gestionnaire d'Entrepôt".equals(role.getName())) {
             warehouse.setManager(saved);
             warehouseRepository.save(warehouse);
+        }
+
+        // Enregistrer l'historique si l'utilisateur est affecté à un entrepôt
+        if (warehouse != null && "Magasinier".equals(role.getName())) {
+            historyService.recordAssignment(saved, warehouse);
         }
 
         return toResponse(saved);
@@ -192,6 +211,9 @@ public class UserService {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Entrepôt introuvable : " + warehouseId));
 
+        // Récupérer le gestionnaire comme créateur
+        User createdBy = getUser(manager.getId());
+
         User user = User.builder()
                 .username(req.getUsername())
                 .email(req.getEmail())
@@ -200,9 +222,15 @@ public class UserService {
                 .mustChangePassword(true)
                 .role(storekeeperRole)
                 .assignedWarehouse(warehouse)
+                .createdBy(createdBy)
                 .build();
 
-        return toResponse(userRepository.save(user));
+        User saved = userRepository.save(user);
+
+        // Enregistrer dans l'historique
+        historyService.recordAssignment(saved, warehouse);
+
+        return toResponse(saved);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -304,32 +332,46 @@ public class UserService {
 
     public UserResponse assignWarehouse(Long userId, Long warehouseId) {
         User user = getUser(userId);
+        String userRole = user.getRole().getName();
 
-        // 1. Désaffecter l'ancien entrepôt géré par cet utilisateur
-        warehouseRepository.findByManagerId(userId).forEach(old -> {
-            old.setManager(null);
-            warehouseRepository.save(old);
-        });
+        // 1. Désaffecter l'ancien entrepôt géré par cet utilisateur (si gestionnaire)
+        if ("Gestionnaire d'Entrepôt".equals(userRole)) {
+            warehouseRepository.findByManagerId(userId).forEach(old -> {
+                old.setManager(null);
+                warehouseRepository.save(old);
+            });
+        }
 
         if (warehouseId == null) {
             // Désaffectation pure
+            if ("Magasinier".equals(userRole)) {
+                historyService.recordUnassignment(userId);
+            }
             user.setAssignedWarehouse(null);
         } else {
             Warehouse target = warehouseRepository.findById(warehouseId)
                     .orElseThrow(() -> new ResourceNotFoundException("Entrepôt introuvable : " + warehouseId));
 
-            // Vérification fraîche en BDD (évite le cache Hibernate) :
+            // Vérification UNIQUEMENT pour les Gestionnaires d'Entrepôt :
             // l'entrepôt cible ne doit pas avoir de gestionnaire autre que l'utilisateur courant.
-            if (warehouseRepository.countOtherManager(warehouseId, userId) > 0) {
-                throw new BusinessException(
-                    "L'entrepôt \"" + target.getName() + "\" a déjà un gestionnaire assigné"
-                );
+            if ("Gestionnaire d'Entrepôt".equals(userRole)) {
+                if (warehouseRepository.countOtherManager(warehouseId, userId) > 0) {
+                    throw new BusinessException(
+                        "L'entrepôt \"" + target.getName() + "\" a déjà un gestionnaire assigné"
+                    );
+                }
+                // 2a. Affecter le gestionnaire à l'entrepôt (relation bidirectionnelle)
+                target.setManager(user);
+                warehouseRepository.save(target);
             }
 
-            // 2. Affecter le nouvel entrepôt
-            target.setManager(user);
-            warehouseRepository.save(target);
+            // 2b. Affecter l'entrepôt à l'utilisateur
             user.setAssignedWarehouse(target);
+
+            // 3. Enregistrer dans l'historique si c'est un magasinier
+            if ("Magasinier".equals(userRole)) {
+                historyService.recordAssignment(user, target);
+            }
         }
 
         return toResponse(userRepository.save(user));
@@ -408,6 +450,10 @@ public class UserService {
                 .roleId(u.getRole().getId())
                 .warehouseId(u.getAssignedWarehouse() != null ? u.getAssignedWarehouse().getId() : null)
                 .warehouseName(u.getAssignedWarehouse() != null ? u.getAssignedWarehouse().getName() : null)
+                .createdById(u.getCreatedBy() != null ? u.getCreatedBy().getId() : null)
+                .createdByUsername(u.getCreatedBy() != null ? u.getCreatedBy().getUsername() : null)
+                .createdByRole(u.getCreatedBy() != null ? u.getCreatedBy().getRole().getName() : null)
+                .isCurrentlyInWarehouse(null) // Sera calculé au niveau du contrôleur si nécessaire
                 .createdAt(u.getCreatedAt())
                 .updatedAt(u.getUpdatedAt())
                 .build();

@@ -8,6 +8,15 @@ export interface UserResponse {
   roleId: number
   warehouseId: number | null
   warehouseName: string | null
+  
+  // Traçabilité du créateur
+  createdById: number | null
+  createdByUsername: string | null
+  createdByRole: string | null
+  
+  // Pour l'affichage dans la liste des magasiniers
+  isCurrentlyInWarehouse: boolean | null
+  
   createdAt: string
   updatedAt: string
 }

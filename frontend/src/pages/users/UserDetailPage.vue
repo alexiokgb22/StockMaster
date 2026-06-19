@@ -22,8 +22,8 @@
             placeholder="sophie@example.com"
           />
 
-          <!-- ── Section entrepôt ── -->
-          <div class="space-y-3">
+          <!-- ── Section entrepôt (uniquement pour Gestionnaire et Magasinier) ── -->
+          <div v-if="user && (user.roleName === 'Gestionnaire d\'Entrepôt' || user.roleName === 'Magasinier')" class="space-y-3">
 
             <!-- CAS 1 : aucun entrepôt actuellement assigné -->
             <template v-if="!currentWarehouse">
@@ -212,21 +212,32 @@ function detachWarehouse() {
 const loadData = async () => {
   loading.value = true
   try {
-    const [userResponse, roles, unassigned] = await Promise.all([
-      userService.get(userId),
-      roleService.list(),
-      // Passe le managerId pour inclure l'entrepôt actuel du gestionnaire dans la liste
-      warehouseService.listUnassigned({ managerId: userId }),
-    ])
-
+    const userResponse = await userService.get(userId)
     user.value = userResponse
+    
     form.username = userResponse.username
     form.email = userResponse.email
     form.warehouseId = userResponse.warehouseId
 
     selectedRoleId.value = userResponse.roleId
+    
+    // Charger les rôles
+    const roles = await roleService.list()
     roleOptions.value = roles.map((role) => ({ label: role.name, value: role.id }))
-    unassignedWarehouses.value = unassigned.content
+    
+    // Charger les entrepôts selon le rôle de l'utilisateur
+    if (userResponse.roleName === 'Gestionnaire d\'Entrepôt') {
+      // Pour un gestionnaire : entrepôts sans manager + son entrepôt actuel
+      const unassigned = await warehouseService.listUnassigned({ managerId: userId })
+      unassignedWarehouses.value = unassigned.content
+    } else if (userResponse.roleName === 'Magasinier') {
+      // Pour un magasinier : tous les entrepôts actifs
+      const allWarehouses = await warehouseService.list({ active: true, page: 0, size: 100 })
+      unassignedWarehouses.value = allWarehouses.content
+    } else {
+      // Pour les autres rôles (Admin, Auditeur) : pas d'entrepôts
+      unassignedWarehouses.value = []
+    }
   } finally {
     loading.value = false
   }

@@ -76,11 +76,15 @@ const adminLinks = computed(() =>
 )
 
 // Gestion : magasiniers (gestionnaire d'entrepôt uniquement)
-const managerLinks = computed(() =>
-  filterLinks([
+// On vérifie le rôle ET la permission pour plus de sécurité
+const managerLinks = computed(() => {
+  if (currentUser.value?.role !== "Gestionnaire d'Entrepôt") {
+    return []
+  }
+  return filterLinks([
     { title: 'Magasiniers', to: { name: 'Storekeepers' }, permission: 'user.create_storekeeper' },
-  ]),
-)
+  ])
+})
 
 // Logistique : liste des entrepôts — admin seulement (warehouse.create)
 // Le gestionnaire n'a pas besoin de cette vue, son entrepôt est affiché dans le badge ci-dessus.

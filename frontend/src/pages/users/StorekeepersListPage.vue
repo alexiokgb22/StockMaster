@@ -18,18 +18,47 @@
         <tr
           v-for="user in storekeepers"
           :key="user.id"
-          class="border-t border-border hover:bg-primary-light/30"
+          :class="[
+            'border-t border-border',
+            user.isCurrentlyInWarehouse 
+              ? 'hover:bg-primary-light/30' 
+              : 'bg-gray-50 opacity-75'
+          ]"
         >
-          <td class="px-4 py-4">{{ user.username }}</td>
+          <td class="px-4 py-4">
+            <div>
+              <span class="font-medium">{{ user.username }}</span>
+              <span 
+                v-if="!user.isCurrentlyInWarehouse" 
+                class="ml-2 inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800"
+              >
+                Réaffecté
+              </span>
+            </div>
+            <div v-if="user.createdByUsername" class="mt-1 text-xs text-text-secondary">
+              Créé par: <span class="font-medium">{{ user.createdByUsername }}</span> 
+              <span class="text-text-tertiary">({{ user.createdByRole }})</span>
+            </div>
+          </td>
           <td class="px-4 py-4">{{ user.email }}</td>
           <td class="px-4 py-4">
             <StatusBadge
+              v-if="user.isCurrentlyInWarehouse"
               :label="user.isActive ? 'Actif' : 'Inactif'"
               :variant="user.isActive ? 'success' : 'danger'"
             />
+            <StatusBadge
+              v-else
+              label="Réaffecté"
+              variant="warning"
+            />
+            <div v-if="!user.isCurrentlyInWarehouse && user.warehouseName" class="mt-1 text-xs text-text-secondary">
+              Maintenant dans: <span class="font-medium">{{ user.warehouseName }}</span>
+            </div>
           </td>
           <td class="px-4 py-4 space-x-2">
             <BaseButton
+              v-if="user.isCurrentlyInWarehouse"
               type="button"
               :variant="user.isActive ? 'secondary' : 'primary'"
               @click="toggleStorekeeper(user.id, user.isActive)"
@@ -37,6 +66,9 @@
             >
               {{ user.isActive ? 'Désactiver' : 'Activer' }}
             </BaseButton>
+            <span v-else class="text-sm text-text-secondary italic">
+              N'est plus dans cet entrepôt
+            </span>
           </td>
         </tr>
       </BaseTable>
