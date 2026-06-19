@@ -102,7 +102,7 @@ public class PermissionSeedService {
             "zone.read", "zone.create", "zone.update",
             // Référentiel produits / catégories / fournisseurs
             "product.read", "product.create", "product.update", "product.delete_logic",
-            "category.read", "category.create", "category.update",
+            "category.read", "category.create", "category.update", "category.delete",
             "supplier.read", "supplier.create", "supplier.update",
             // Stocks (lecture + ajustement manuel + seuils)
             "stock.read", "stock.view_history", "stock.update", "stock.configure_thresholds",

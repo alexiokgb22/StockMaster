@@ -60,6 +60,12 @@ const routes = [
         meta: { permission: 'user.read' },
       },
       {
+        path: 'categories',
+        name: 'Categories',
+        component: () => import('@/pages/categories/CategoriesPage.vue'),
+        meta: { permission: 'category.read' },
+      },
+      {
         path: 'warehouses',
         name: 'Warehouses',
         component: () => import('@/pages/warehouses/WarehousesPage.vue'),

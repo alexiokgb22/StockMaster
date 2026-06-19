@@ -47,6 +47,7 @@ public final class PermissionCatalog {
             new PermissionDefinition("category", "read",   "category.read",   "Lire les catégories",    "Consulter les catégories"),
             new PermissionDefinition("category", "create", "category.create", "Créer une catégorie",    "Ajouter une catégorie"),
             new PermissionDefinition("category", "update", "category.update", "Modifier une catégorie", "Mettre à jour une catégorie"),
+            new PermissionDefinition("category", "delete", "category.delete", "Supprimer une catégorie","Supprimer une catégorie sans produits rattachés"),
 
             // Fournisseurs
             new PermissionDefinition("supplier", "read",   "supplier.read",   "Lire les fournisseurs",   "Consulter les fournisseurs"),

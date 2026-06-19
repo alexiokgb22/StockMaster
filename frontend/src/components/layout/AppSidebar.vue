@@ -108,11 +108,14 @@ const logisticsLinks = computed(() =>
   ]),
 )
 
-const inventoryLinks = computed(() => [
-  { title: 'Produits',     to: { name: 'NotFound' }, comingSoon: true },
-  { title: 'Stocks',       to: { name: 'NotFound' }, comingSoon: true },
-  { title: 'Inventaires',  to: { name: 'NotFound' }, comingSoon: true },
-])
+const inventoryLinks = computed(() =>
+  filterLinks([
+    { title: 'Catégories',  to: { name: 'Categories' }, permission: 'category.read' },
+    { title: 'Produits',    to: { name: 'NotFound' },   comingSoon: true },
+    { title: 'Stocks',      to: { name: 'NotFound' },   comingSoon: true },
+    { title: 'Inventaires', to: { name: 'NotFound' },   comingSoon: true },
+  ]),
+)
 
 const supplyLinks = computed(() => [
   { title: 'Fournisseurs', to: { name: 'NotFound' }, comingSoon: true },
