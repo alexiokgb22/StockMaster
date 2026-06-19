@@ -1,15 +1,16 @@
 <template>
   <div>
-    <div class="text-xs uppercase tracking-[0.2em] text-text-secondary mb-3">{{ label }}</div>
+    <div class="text-xs uppercase tracking-[0.2em] text-white/50 mb-3 font-semibold">{{ label }}</div>
     <div class="space-y-1">
       <RouterLink
         v-for="item in items"
         :key="item.title"
         :to="item.to"
-        class="group flex items-center justify-between rounded-2xl px-3 py-2 text-sm font-medium text-text-secondary transition hover:bg-primary-light hover:text-primary"
+        class="group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-white/70 transition-all hover:bg-white/10 hover:text-white"
+        active-class="!bg-accent !text-primary font-semibold shadow-lg"
       >
         <span>{{ item.title }}</span>
-        <span v-if="item.comingSoon" class="text-[11px] uppercase tracking-[0.2em] text-accent">À venir</span>
+        <span v-if="item.comingSoon" class="text-[10px] uppercase tracking-[0.2em] text-accent/80 font-bold">À venir</span>
       </RouterLink>
     </div>
   </div>

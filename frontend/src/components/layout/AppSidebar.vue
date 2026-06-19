@@ -1,18 +1,9 @@
 <template>
-  <aside class="w-72 min-h-screen border-r border-border bg-white px-4 py-6 hidden lg:flex lg:flex-col">
+  <aside class="w-72 min-h-screen bg-primary px-4 py-6 hidden lg:flex lg:flex-col shadow-xl">
     <!-- Logo -->
-    <div class="mb-6 px-2">
-      <div class="text-2xl font-semibold text-primary">StockMaster</div>
-      <p class="mt-1 text-sm text-text-secondary">ERP WMS foundation</p>
-    </div>
-
-    <!-- Badge entrepôt — visible uniquement pour le gestionnaire -->
-    <div
-      v-if="currentUser?.warehouseName && currentUser.role === 'Gestionnaire d\'Entrepôt'"
-      class="mb-6 mx-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3"
-    >
-      <div class="text-xs font-medium uppercase tracking-wide text-primary/70">Mon entrepôt</div>
-      <div class="mt-1 text-sm font-semibold text-primary">{{ currentUser.warehouseName }}</div>
+    <div class="mb-8 px-2">
+      <div class="text-2xl font-bold text-white">StockMaster</div>
+      <p class="mt-1 text-sm text-white/60">ERP WMS foundation</p>
     </div>
 
     <nav class="space-y-6 px-2 flex-1">
@@ -44,6 +35,29 @@
       <SidebarSection label="Mouvements"        :items="movementLinks" />
       <SidebarSection label="Rapports"          :items="reportsLinks" />
     </nav>
+
+    <!-- Carte entrepôt — visible pour gestionnaire et magasinier -->
+    <div
+      v-if="currentUser?.warehouseName && (currentUser.role === 'Gestionnaire d\'Entrepôt' || currentUser.role === 'Magasinier')"
+      class="mt-6 mx-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-4"
+    >
+      <div class="flex items-start gap-3">
+        <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
+          <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-medium uppercase tracking-wide text-accent mb-1">
+            {{ currentUser.role === 'Gestionnaire d\'Entrepôt' ? 'Mon entrepôt' : 'Affecté à' }}
+          </div>
+          <div class="text-sm font-semibold text-white truncate">{{ currentUser.warehouseName }}</div>
+          <div v-if="currentUser.warehouseCity" class="text-xs text-white/60 mt-0.5">
+            {{ currentUser.warehouseCity }}
+          </div>
+        </div>
+      </div>
+    </div>
   </aside>
 </template>
 

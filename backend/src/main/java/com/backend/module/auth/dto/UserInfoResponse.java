@@ -24,5 +24,7 @@ public class UserInfoResponse {
     private Set<String> permissions;
     private Long warehouseId;
     private String warehouseName;
+    private String warehouseCity;
+    private String warehouseAddress;
     private Boolean mustChangePassword;
 }
