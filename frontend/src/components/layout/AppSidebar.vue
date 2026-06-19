@@ -25,6 +25,13 @@
         :items="adminLinks"
       />
 
+      <!-- Gestion — gestionnaire d'entrepôt uniquement -->
+      <SidebarSection
+        v-if="managerLinks.length"
+        label="Gestion"
+        :items="managerLinks"
+      />
+
       <!-- Logistique — entrepôts visible uniquement pour l'admin (warehouse.create) -->
       <SidebarSection
         v-if="logisticsLinks.length"
@@ -65,6 +72,13 @@ const adminLinks = computed(() =>
   filterLinks([
     { title: 'Utilisateurs', to: { name: 'Users' },  permission: 'user.read' },
     { title: 'Rôles',        to: { name: 'Roles' },  permission: 'user.read' },
+  ]),
+)
+
+// Gestion : magasiniers (gestionnaire d'entrepôt uniquement)
+const managerLinks = computed(() =>
+  filterLinks([
+    { title: 'Magasiniers', to: { name: 'Storekeepers' }, permission: 'user.create_storekeeper' },
   ]),
 )
 

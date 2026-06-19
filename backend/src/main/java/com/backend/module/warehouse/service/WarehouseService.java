@@ -83,6 +83,14 @@ public class WarehouseService {
         if (req.getManagerId() != null) {
             manager = userRepository.findById(req.getManagerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Gestionnaire introuvable : " + req.getManagerId()));
+            
+            // Vérification : Le gestionnaire ne doit pas déjà gérer un autre entrepôt
+            if (manager.getAssignedWarehouse() != null) {
+                throw new BusinessException(
+                    "Ce gestionnaire gère déjà l'entrepôt \"" + 
+                    manager.getAssignedWarehouse().getName() + "\""
+                );
+            }
         }
 
         Warehouse warehouse = Warehouse.builder()
@@ -95,7 +103,15 @@ public class WarehouseService {
                 .manager(manager)
                 .build();
 
-        return toResponse(warehouseRepository.save(warehouse));
+        Warehouse saved = warehouseRepository.save(warehouse);
+
+        // Synchronisation bidirectionnelle : mettre à jour user.assignedWarehouse
+        if (manager != null) {
+            manager.setAssignedWarehouse(saved);
+            userRepository.save(manager);
+        }
+
+        return toResponse(saved);
     }
 
     // ─────────────────────────────────────────────────────────────

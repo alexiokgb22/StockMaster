@@ -52,13 +52,14 @@ public class UserSeedService {
         
         // Créer l'utilisateur admin
         User admin = User.builder()
-                .username("admin")
-                .email("admin@stockmaster.com")
-                .password(passwordEncoder.encode("admin123")) // Mot de passe par défaut
-                .isActive(true)
-                .role(adminRole)
-                .assignedWarehouse(null) // Admin n'est pas affecté à un entrepôt spécifique
-                .build();
+        .username("admin")
+        .email("admin@stockmaster.com")
+        .password(passwordEncoder.encode("admin123"))
+        .isActive(true)
+        .mustChangePassword(false)
+        .role(adminRole)
+        .assignedWarehouse(null)
+        .build();
 
         userRepository.save(admin);
 

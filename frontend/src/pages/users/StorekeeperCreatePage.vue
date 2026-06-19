@@ -43,7 +43,7 @@
           <BaseButton type="submit" :disabled="loading">
             {{ loading ? 'Création…' : 'Créer le magasinier' }}
           </BaseButton>
-          <RouterLink to="/users" class="text-sm text-text-secondary hover:text-primary">
+          <RouterLink to="/storekeepers" class="text-sm text-text-secondary hover:text-primary">
             Retour
           </RouterLink>
         </div>
@@ -84,7 +84,7 @@ const submit = async () => {
   loading.value = true
   try {
     await userService.createStorekeeper({ ...form, warehouseId: null })
-    router.push({ name: 'Users' })
+    router.push({ name: 'Storekeepers' })
   } catch (err: unknown) {
     if (err && typeof err === 'object' && 'response' in err) {
       const r = (err as { response?: { data?: { message?: string } } }).response

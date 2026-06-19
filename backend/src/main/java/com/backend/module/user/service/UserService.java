@@ -141,10 +141,9 @@ public class UserService {
         Warehouse warehouse = resolveWarehouse(role, req.getWarehouseId());
 
         // Vérification AVANT la création : si Gestionnaire d'Entrepôt, l'entrepôt
-        // cible ne doit pas avoir de manager. On utilise une requête JPQL directe
-        // pour contourner le cache Hibernate et avoir une valeur fraîche de la BDD.
+        // cible ne doit pas avoir de manager.
         if (warehouse != null && "Gestionnaire d'Entrepôt".equals(role.getName())) {
-            if (warehouseRepository.countManager(warehouse.getId()) > 0) {
+            if (warehouse.getManager() != null) {
                 throw new BusinessException(
                     "L'entrepôt \"" + warehouse.getName() + "\" a déjà un gestionnaire assigné"
                 );
@@ -163,8 +162,7 @@ public class UserService {
 
         User saved = userRepository.save(user);
 
-        // Synchroniser warehouse.manager pour que la colonne soit visible
-        // côté liste des entrepôts.
+        // Synchronisation bidirectionnelle : mettre à jour warehouse.manager
         if (warehouse != null && "Gestionnaire d'Entrepôt".equals(role.getName())) {
             warehouse.setManager(saved);
             warehouseRepository.save(warehouse);

@@ -66,7 +66,7 @@ public class User extends BaseEntity {
 
     // Forcé à true à la création — l'utilisateur doit changer son mot de passe à la première connexion
     @Column(name = "must_change_password", nullable = false)
-    private Boolean mustChangePassword;
+    private Boolean mustChangePassword = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)

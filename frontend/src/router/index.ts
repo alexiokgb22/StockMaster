@@ -42,6 +42,12 @@ const routes = [
         meta: { permission: 'user.create_storekeeper' },
       },
       {
+        path: 'storekeepers',
+        name: 'Storekeepers',
+        component: () => import('@/pages/users/StorekeepersListPage.vue'),
+        meta: { permission: 'user.create_storekeeper' },
+      },
+      {
         path: 'users/:id',
         name: 'UserDetail',
         component: () => import('@/pages/users/UserDetailPage.vue'),

@@ -57,6 +57,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
         JOIN FETCH u.role r
         LEFT JOIN FETCH u.assignedWarehouse w
         WHERE u.assignedWarehouse.id = :warehouseId
+          AND r.name = 'Magasinier'
           AND (:search IS NULL OR LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:active IS NULL OR u.isActive = :active)
         """)
