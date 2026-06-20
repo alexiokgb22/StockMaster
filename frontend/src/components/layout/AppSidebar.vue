@@ -110,14 +110,16 @@ const logisticsLinks = computed(() =>
   ]),
 )
 
-const inventoryLinks = computed(() =>
-  filterLinks([
-    { title: 'Catégories',  to: { name: 'Categories' }, permission: 'category.read' },
-    { title: 'Produits',    to: { name: 'NotFound' },   comingSoon: true },
-    { title: 'Stocks',      to: { name: 'NotFound' },   comingSoon: true },
-    { title: 'Inventaires', to: { name: 'NotFound' },   comingSoon: true },
-  ]),
-)
+const inventoryLinks = computed(() => {
+  const isAdmin = currentUser.value?.role === 'Administrateur'
+  return filterLinks([
+    // Catégories : admin uniquement — le gestionnaire passe par l'onglet de son entrepôt
+    ...(isAdmin ? [{ title: 'Catégories', to: { name: 'Categories' }, permission: 'category.read' }] : []),
+    { title: 'Produits',    to: { name: 'NotFound' }, comingSoon: true },
+    { title: 'Stocks',      to: { name: 'NotFound' }, comingSoon: true },
+    { title: 'Inventaires', to: { name: 'NotFound' }, comingSoon: true },
+  ])
+})
 
 const supplyLinks = computed(() => [
   { title: 'Fournisseurs', to: { name: 'NotFound' }, comingSoon: true },

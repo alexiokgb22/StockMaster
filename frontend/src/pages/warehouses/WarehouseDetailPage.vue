@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-50 px-6 py-8">
-    <!-- Retour -->
-    <div class="mb-6">
+    <!-- Retour — visible uniquement pour l'admin (le gestionnaire n'a pas de liste globale) -->
+    <div v-if="!isManager" class="mb-6">
       <router-link
         :to="{ name: 'Warehouses' }"
         class="text-sm text-blue-600 hover:underline"
@@ -150,6 +150,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { usePermissions } from '@/composables/usePermissions'
+import { useAuthStore } from '@/stores/auth'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import Badge from '@/components/ui/Badge.vue'
 import FormField from '@/components/ui/FormField.vue'
@@ -164,6 +165,9 @@ import type { UpdateWarehouseRequest } from '@/types/warehouse.types'
 const route = useRoute()
 const warehouseStore = useWarehouseStore()
 const { hasPermission } = usePermissions()
+const authStore = useAuthStore()
+
+const isManager = computed(() => authStore.currentUser?.role === "Gestionnaire d'entrepôt")
 
 const loading  = ref(true)
 const updating = ref(false)

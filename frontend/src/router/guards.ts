@@ -33,12 +33,15 @@ export const usePermissionGuard = () => {
 
   return (to: RouteLocationNormalized, from: RouteLocationNormalized, next: NavigationGuardNext) => {
     const requiredPermission = to.meta?.permission as string | undefined
+    const requiredRole       = to.meta?.role as string | undefined
 
-    if (!requiredPermission) {
-      return next()
+    // Vérification de permission
+    if (requiredPermission && !authStore.hasPermission(requiredPermission)) {
+      return next({ name: 'Forbidden' })
     }
 
-    if (!authStore.hasPermission(requiredPermission)) {
+    // Vérification de rôle (en plus de la permission)
+    if (requiredRole && authStore.currentUser?.role !== requiredRole) {
       return next({ name: 'Forbidden' })
     }
 

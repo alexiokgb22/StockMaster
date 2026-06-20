@@ -89,8 +89,7 @@ public class ZoneService {
                 throw new BusinessException("La capacité est obligatoire et doit être supérieure à 0");
             }
 
-            if (req.getCategoryId() != null) {
-                // Cas b) — zone avec catégorie :
+            if (req.getCategoryId() != null) {                // Cas b) — zone avec catégorie :
                 // autorisé si l'Admin n'a pas encore créé de zone pour cette catégorie
                 long adminCoverage = zoneRepository
                         .countAdminZonesByWarehouseAndCategory(warehouseId, req.getCategoryId());
@@ -125,6 +124,21 @@ public class ZoneService {
         Category category = null;
         if (req.getCategoryId() != null) {
             category = getCategory(req.getCategoryId(), warehouseId);
+        }
+
+        // ── Règle 1 : capacité allouée aux zones ≤ totalCapacity de l'entrepôt ──
+        // Vérification uniquement si une capacité est fournie.
+        if (req.getCapacity() != null && req.getCapacity() > 0) {
+            double alreadyAllocated = zoneRepository.sumCapacityByWarehouseId(warehouseId);
+            double afterCreation    = alreadyAllocated + req.getCapacity();
+            if (warehouse.getTotalCapacity() != null
+                    && afterCreation > warehouse.getTotalCapacity()) {
+                double remaining = warehouse.getTotalCapacity() - alreadyAllocated;
+                throw new BusinessException(String.format(
+                    "Capacité insuffisante dans l'entrepôt. "
+                    + "Espace restant disponible : %.1f m³ (demandé : %.1f m³).",
+                    remaining, req.getCapacity()));
+            }
         }
 
         String name = buildName(sequence, category);

@@ -6,161 +6,74 @@
     />
 
     <!-- Barre d'action -->
-    <div class="mt-6 flex gap-4">
-      <div class="flex-1">
-        <Input
-          v-model="search"
-          placeholder="Rechercher par nom ou ville..."
-          @update:model-value="handleSearch"
-        />
+    <div class="mt-6 flex flex-wrap items-center gap-3">
+      <BaseInput
+        v-model="search"
+        placeholder="Rechercher par nom ou ville…"
+        class="w-full max-w-xs"
+      />
+
+      <!-- Filtres statut -->
+      <div class="flex gap-1.5 rounded-lg border border-border bg-white p-1">
+        <button
+          v-for="f in filters"
+          :key="String(f.value)"
+          @click="filterActive = f.value"
+          class="rounded-md px-3 py-1 text-sm font-medium transition-colors"
+          :class="filterActive === f.value
+            ? 'bg-primary text-white shadow-sm'
+            : 'text-text-secondary hover:text-text-main'"
+        >
+          {{ f.label }}
+        </button>
       </div>
-      <Button
-        v-if="canCreate"
-        @click="showCreateModal = true"
-        class="px-4 py-2"
-      >
-        + Nouvel entrepôt
-      </Button>
+
+      <div class="ml-auto">
+        <BaseButton v-if="canCreate" @click="showCreateModal = true">
+          + Nouvel entrepôt
+        </BaseButton>
+      </div>
     </div>
 
-    <!-- Filtres -->
-    <div class="mt-4 flex gap-2">
-      <button
-        @click="filterActive = null"
-        :class="[
-          'px-3 py-1 rounded text-sm font-medium',
-          filterActive === null
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-200 text-gray-700'
-        ]"
-      >
-        Tous
-      </button>
-      <button
-        @click="filterActive = true"
-        :class="[
-          'px-3 py-1 rounded text-sm font-medium',
-          filterActive === true
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-200 text-gray-700'
-        ]"
-      >
-        Actifs
-      </button>
-      <button
-        @click="filterActive = false"
-        :class="[
-          'px-3 py-1 rounded text-sm font-medium',
-          filterActive === false
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-200 text-gray-700'
-        ]"
-      >
-        Inactifs
-      </button>
-    </div>
+    <!-- Compteur -->
+    <p class="mt-4 text-sm text-text-secondary">
+      <template v-if="!warehouseStore.loading">
+        {{ warehouseStore.warehouses.length }} entrepôt{{ warehouseStore.warehouses.length !== 1 ? 's' : '' }}
+      </template>
+    </p>
 
     <!-- Erreur -->
-    <div v-if="error" class="mt-4 rounded bg-red-50 p-4 text-red-700">
+    <div v-if="error" class="mt-4 rounded-lg bg-red-50 p-4 text-sm text-red-700">
       {{ error }}
     </div>
 
-    <!-- Tableau -->
-    <div class="mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white">
-      <div v-if="warehouseStore.loading && warehouseStore.warehouses.length === 0" class="p-6">
-        <SkeletonLoader :count="5" />
-      </div>
-      <div v-else-if="warehouseStore.warehouses.length === 0" class="p-6">
-        <EmptyState
-          title="Aucun entrepôt"
-          description="Commencez par créer un nouvel entrepôt"
-        />
-      </div>
-      <table v-else class="w-full">
-        <thead class="bg-gray-50 border-b">
-          <tr>
-            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-              Nom
-            </th>
-            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-              Ville
-            </th>
-            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-              Gestionnaire
-            </th>
-            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-              Capacité
-            </th>
-            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-              État
-            </th>
-            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="warehouse in warehouseStore.warehouses"
-            :key="warehouse.id"
-            class="border-b hover:bg-gray-50"
-          >
-            <td class="px-6 py-4 text-sm text-gray-900">
-              <router-link
-                :to="{ name: 'WarehouseDetail', params: { id: warehouse.id } }"
-                class="font-medium text-blue-600 hover:underline"
-              >
-                {{ warehouse.name }}
-              </router-link>
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-700">
-              {{ warehouse.city }}
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-700">
-              {{ warehouse.managerName || '-' }}
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-700">
-              <div class="flex items-center gap-2">
-                <div class="flex-1 bg-gray-200 rounded-full h-2">
-                  <div
-                    class="bg-blue-600 h-2 rounded-full"
-                    :style="{ width: capacityPercent(warehouse) + '%' }"
-                  />
-                </div>
-                <span class="text-xs text-gray-600">
-                  {{ (capacityPercent(warehouse) || 0).toFixed(0) }}%
-                </span>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-sm">
-              <Badge
-                :variant="warehouse.isActive ? 'success' : 'secondary'"
-                :text="warehouse.isActive ? 'Actif' : 'Inactif'"
-              />
-            </td>
-            <td class="px-6 py-4 text-sm">
-              <div class="flex gap-2">
-                <Button
-                  v-if="canUpdate"
-                  @click="editWarehouse(warehouse)"
-                  class="px-3 py-1 text-xs"
-                  variant="secondary"
-                >
-                  Éditer
-                </Button>
-                <Button
-                  v-if="canDisable"
-                  @click="openToggleConfirmation(warehouse)"
-                  :variant="warehouse.isActive ? 'danger' : 'secondary'"
-                  class="px-3 py-1 text-xs"
-                >
-                  {{ warehouse.isActive ? 'Désactiver' : 'Activer' }}
-                </Button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Skeleton -->
+    <div v-if="warehouseStore.loading && warehouseStore.warehouses.length === 0" class="mt-6">
+      <SkeletonLoader :count="6" />
+    </div>
+
+    <!-- État vide -->
+    <div v-else-if="warehouseStore.warehouses.length === 0" class="mt-10">
+      <EmptyState
+        title="Aucun entrepôt"
+        description="Commencez par créer un nouvel entrepôt."
+      />
+    </div>
+
+    <!-- Grille de cartes -->
+    <div
+      v-else
+      class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+    >
+      <WarehouseCard
+        v-for="warehouse in warehouseStore.warehouses"
+        :key="warehouse.id"
+        :warehouse="warehouse"
+        :can-update="canUpdate"
+        :can-disable="canDisable"
+        @edit="editWarehouse"
+        @toggle="openToggleConfirmation"
+      />
     </div>
 
     <!-- Modales -->
@@ -195,35 +108,40 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { usePermissions } from '@/composables/usePermissions'
 import PageHeader from '@/components/ui/PageHeader.vue'
-import Input from '@/components/ui/BaseInput.vue'
-import Button from '@/components/ui/BaseButton.vue'
-import Badge from '@/components/ui/StatusBadge.vue'
+import BaseInput from '@/components/ui/BaseInput.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'
 import WarehouseFormModal from '@/components/warehouse/WarehouseFormModal.vue'
+import WarehouseCard from '@/components/warehouse/WarehouseCard.vue'
 import type { WarehouseResponse } from '@/types/warehouse.types'
 
 const warehouseStore = useWarehouseStore()
 const { hasPermission } = usePermissions()
 
-const search = ref('')
-const filterActive = ref<boolean | null>(null)
-const showCreateModal = ref(false)
+const search           = ref('')
+const filterActive     = ref<boolean | null>(null)
+const showCreateModal  = ref(false)
 const editingWarehouse = ref<WarehouseResponse | null>(null)
 const toggleWarehouseId = ref<number | null>(null)
-const toggleWarehouse = ref<WarehouseResponse | null>(null)
+const toggleWarehouse   = ref<WarehouseResponse | null>(null)
 
-const canCreate = computed(() => hasPermission('warehouse.create'))
-const canUpdate = computed(() => hasPermission('warehouse.update'))
+const canCreate  = computed(() => hasPermission('warehouse.create'))
+const canUpdate  = computed(() => hasPermission('warehouse.update'))
 const canDisable = computed(() => hasPermission('warehouse.disable'))
+const error      = computed(() => warehouseStore.error)
 
-const error = computed(() => warehouseStore.error)
+const filters = [
+  { label: 'Tous',    value: null  },
+  { label: 'Actifs',  value: true  },
+  { label: 'Inactifs', value: false },
+] as const
 
-const handleSearch = () => {
+const load = () => {
   warehouseStore.fetchWarehouses({
     search: search.value || undefined,
-    active: filterActive.value || undefined
+    active: filterActive.value ?? undefined,
   })
 }
 
@@ -232,7 +150,7 @@ const editWarehouse = (warehouse: WarehouseResponse) => {
 }
 
 const openToggleConfirmation = (warehouse: WarehouseResponse) => {
-  toggleWarehouse.value = warehouse
+  toggleWarehouse.value   = warehouse
   toggleWarehouseId.value = warehouse.id
 }
 
@@ -245,24 +163,14 @@ const handleToggle = async () => {
 
 const handleCreate = async () => {
   showCreateModal.value = false
-  await warehouseStore.fetchWarehouses()
+  await load()
 }
 
 const handleUpdate = async () => {
   editingWarehouse.value = null
-  await warehouseStore.fetchWarehouses()
+  await load()
 }
 
-const capacityPercent = (warehouse: WarehouseResponse) => {
-  if (warehouse.totalCapacity === 0) return 0
-  return (warehouse.usedCapacity / warehouse.totalCapacity) * 100
-}
-
-watch([search, filterActive], () => {
-  handleSearch()
-})
-
-onMounted(() => {
-  warehouseStore.fetchWarehouses()
-})
+watch([search, filterActive], load)
+onMounted(load)
 </script>
