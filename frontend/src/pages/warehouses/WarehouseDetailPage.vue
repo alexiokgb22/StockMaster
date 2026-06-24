@@ -95,6 +95,14 @@
           v-if="activeTab === 'categories' && warehouseId > 0"
           :warehouse-id="warehouseId"
         />
+        <WarehouseProducts
+          v-if="activeTab === 'products' && warehouseId > 0"
+          :warehouse-id="warehouseId"
+        />
+        <WarehouseStocks
+          v-if="activeTab === 'stocks' && warehouseId > 0"
+          :warehouse-id="warehouseId"
+        />
       </BaseCard>
 
       <!-- Formulaire d'édition -->
@@ -160,6 +168,8 @@ import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog.vue'
 import WarehouseZones from '@/components/warehouse/WarehouseZones.vue'
 import WarehouseCategories from '@/components/warehouse/WarehouseCategories.vue'
+import WarehouseProducts from '@/components/warehouse/WarehouseProducts.vue'
+import WarehouseStocks from '@/components/warehouse/WarehouseStocks.vue'
 import type { UpdateWarehouseRequest } from '@/types/warehouse.types'
 
 const route = useRoute()
@@ -173,11 +183,13 @@ const loading  = ref(true)
 const updating = ref(false)
 const error    = ref<string | null>(null)
 const showToggleConfirmation = ref(false)
-const activeTab = ref<'zones' | 'categories'>('zones')
+const activeTab = ref<'zones' | 'categories' | 'products' | 'stocks'>('zones')
 
 const tabs = [
   { key: 'zones',      label: 'Zones' },
   { key: 'categories', label: 'Catégories' },
+  { key: 'products',   label: 'Produits' },
+  { key: 'stocks',     label: 'Stocks' },
 ]
 
 const warehouse = computed(() => warehouseStore.currentWarehouse)

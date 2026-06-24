@@ -115,7 +115,8 @@ const inventoryLinks = computed(() => {
   return filterLinks([
     // Catégories : admin uniquement — le gestionnaire passe par l'onglet de son entrepôt
     ...(isAdmin ? [{ title: 'Catégories', to: { name: 'Categories' }, permission: 'category.read' }] : []),
-    { title: 'Produits',    to: { name: 'NotFound' }, comingSoon: true },
+    // Produits : admin → page catalogue globale / gestionnaire → onglet entrepôt
+    ...(isAdmin ? [{ title: 'Produits', to: { name: 'Products' }, permission: 'product.read' }] : []),
     { title: 'Stocks',      to: { name: 'NotFound' }, comingSoon: true },
     { title: 'Inventaires', to: { name: 'NotFound' }, comingSoon: true },
   ])

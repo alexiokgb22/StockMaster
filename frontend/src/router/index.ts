@@ -66,6 +66,12 @@ const routes = [
         meta: { permission: 'category.read', role: 'Administrateur' },
       },
       {
+        path: 'products',
+        name: 'Products',
+        component: () => import('@/pages/products/ProductsPage.vue'),
+        meta: { permission: 'product.read', role: 'Administrateur' },
+      },
+      {
         path: 'warehouses',
         name: 'Warehouses',
         component: () => import('@/pages/warehouses/WarehousesPage.vue'),
