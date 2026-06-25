@@ -5,20 +5,10 @@ import java.util.Set;
 
 import com.backend.module.purchaseorder.entity.PurchaseOrder;
 import com.backend.module.shared.entity.BaseEntity;
+import com.backend.module.warehouse.entity.Warehouse;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 @Entity
@@ -55,6 +45,16 @@ public class Supplier extends BaseEntity {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "supplier_warehouses",
+        joinColumns = @JoinColumn(name = "supplier_id"),
+        inverseJoinColumns = @JoinColumn(name = "warehouse_id")
+    )
+    @JsonIgnore
+    @Builder.Default
+    private Set<Warehouse> warehouses = new HashSet<>();
 
     @OneToMany(mappedBy = "supplier", fetch = FetchType.LAZY)
     @JsonIgnore

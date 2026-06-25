@@ -122,10 +122,13 @@ const inventoryLinks = computed(() => {
   ])
 })
 
-const supplyLinks = computed(() => [
-  { title: 'Fournisseurs', to: { name: 'NotFound' }, comingSoon: true },
-  { title: 'Commandes',    to: { name: 'NotFound' }, comingSoon: true },
-])
+const supplyLinks = computed(() => {
+  const isAdmin = currentUser.value?.role === 'Administrateur'
+  return filterLinks([
+    ...(isAdmin ? [{ title: 'Fournisseurs', to: { name: 'Suppliers' }, permission: 'supplier.read' }] : []),
+    { title: 'Commandes', to: { name: 'NotFound' }, comingSoon: true },
+  ])
+})
 
 const movementLinks = computed(() => [
   { title: 'Réceptions', to: { name: 'NotFound' }, comingSoon: true },
