@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @Builder
@@ -29,6 +30,9 @@ public class ProductResponse {
 
     private String createdByUsername;
     private Boolean isAdminDefined;
+
+    // IDs des entrepôts dans lesquels ce produit est disponible
+    private Set<Long> warehouseIds;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

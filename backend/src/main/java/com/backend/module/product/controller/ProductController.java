@@ -3,6 +3,7 @@ package com.backend.module.product.controller;
 import com.backend.module.product.dto.CreateProductRequest;
 import com.backend.module.product.dto.ProductResponse;
 import com.backend.module.product.dto.UpdateProductRequest;
+import com.backend.module.product.dto.UpdateProductWarehousesRequest;
 import com.backend.module.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,12 @@ public class ProductController {
             return ResponseEntity.ok(productService.findAll(search, categoryId, active, pageable));
         }
 
+        @GetMapping("/warehouses-by-category")
+        @PreAuthorize("hasAuthority('product.read')")
+        public ResponseEntity<List<Long>> getWarehousesByCategory(@RequestParam Long categoryId) {
+            return ResponseEntity.ok(productService.findWarehouseIdsByCategory(categoryId));
+        }
+
         @GetMapping("/{id}")
         @PreAuthorize("hasAuthority('product.read')")
         public ResponseEntity<ProductResponse> getById(@PathVariable Long id) {
@@ -71,6 +78,15 @@ public class ProductController {
         @PreAuthorize("hasAuthority('product.delete_logic')")
         public ResponseEntity<ProductResponse> toggle(@PathVariable Long id) {
             return ResponseEntity.ok(productService.toggle(id));
+        }
+
+        @PutMapping("/{id}/warehouses")
+        @PreAuthorize("hasAuthority('product.update')")
+        public ResponseEntity<ProductResponse> updateWarehouses(
+                @PathVariable Long id,
+                @Valid @RequestBody UpdateProductWarehousesRequest req
+        ) {
+            return ResponseEntity.ok(productService.updateWarehouses(id, req.getWarehouseIds()));
         }
     }
 

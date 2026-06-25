@@ -28,8 +28,14 @@ export const productService = {
   update: (id: number, data: UpdateProductRequest): Promise<ProductResponse> =>
     http.put(`/api/products/${id}`, data).then((r) => r.data),
 
+  updateWarehouses: (id: number, warehouseIds: number[]): Promise<ProductResponse> =>
+    http.put(`/api/products/${id}/warehouses`, { warehouseIds }).then((r) => r.data),
+
   toggle: (id: number): Promise<ProductResponse> =>
     http.patch(`/api/products/${id}/toggle`).then((r) => r.data),
+
+  getWarehousesByCategory: (categoryId: number): Promise<number[]> =>
+    http.get('/api/products/warehouses-by-category', { params: { categoryId } }).then((r) => r.data),
 
   // ── Contexte entrepôt (admin + gestionnaire) ──────────────────
   listByWarehouse: (

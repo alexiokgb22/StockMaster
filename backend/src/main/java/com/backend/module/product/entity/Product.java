@@ -18,10 +18,13 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import com.backend.module.warehouse.entity.Warehouse;
 import com.backend.module.user.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -84,6 +87,20 @@ public class Product extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id")
     private User createdBy;
+
+    // Entrepôts dans lesquels ce produit est disponible.
+    // Table de liaison : product_warehouses (product_id, warehouse_id)
+    // L'admin choisit explicitement les entrepôts à la création ou après coup.
+    // Le gestionnaire crée dans son entrepôt → son entrepôt est ajouté automatiquement.
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "product_warehouses",
+        joinColumns = @JoinColumn(name = "product_id"),
+        inverseJoinColumns = @JoinColumn(name = "warehouse_id")
+    )
+    @JsonIgnore
+    @Builder.Default
+    private Set<Warehouse> warehouses = new HashSet<>();
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     @JsonIgnore

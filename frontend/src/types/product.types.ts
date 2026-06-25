@@ -13,6 +13,7 @@ export interface ProductResponse {
   categoryName: string
   createdByUsername: string
   isAdminDefined: boolean
+  warehouseIds: number[]
   createdAt: string
   updatedAt: string
 }
@@ -25,6 +26,7 @@ export interface CreateProductRequest {
   salePrice?: number
   weight?: number
   volume?: number
+  warehouseIds?: number[]
 }
 
 export interface UpdateProductRequest {

@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -25,4 +27,8 @@ public class CreateProductRequest {
     private Double salePrice;
     private Double weight;
     private Double volume;
+
+    // Entrepôts sélectionnés par l'admin (checkboxes).
+    // Null ou vide = produit global sans affectation immédiate.
+    private Set<Long> warehouseIds;
 }

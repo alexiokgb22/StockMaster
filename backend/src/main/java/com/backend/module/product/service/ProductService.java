@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -65,10 +66,8 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<ProductResponse> findForStockSelect(Long warehouseId, Long categoryId) {
         getWarehouse(warehouseId);
-        List<Product> products = categoryId != null
-                ? productRepository.findByCategoryAndWarehouse(categoryId, warehouseId)
-                : productRepository.findActiveByWarehouse(warehouseId);
-        return products.stream().map(this::toResponse).toList();
+        return productRepository.findForStockSelect(warehouseId, categoryId)
+                .stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
@@ -86,13 +85,12 @@ public class ProductService {
         validateProductName(req.getName(), req.getCategoryId(), null);
 
         User creator = currentUserEntity();
-        String barcode = generateBarcode();
 
         Product product = Product.builder()
                 .name(req.getName().trim())
                 .description(req.getDescription())
                 .reference(generateReference())
-                .barcode(barcode)
+                .barcode(generateBarcode())
                 .purchasePrice(req.getPurchasePrice())
                 .salePrice(req.getSalePrice())
                 .weight(req.getWeight())
@@ -102,7 +100,23 @@ public class ProductService {
                 .createdBy(creator)
                 .build();
 
+        if (req.getWarehouseIds() != null && !req.getWarehouseIds().isEmpty()) {
+            for (Long wId : req.getWarehouseIds()) {
+                Warehouse w = getWarehouse(wId);
+                product.getWarehouses().add(w);
+            }
+        }
+
         return toResponse(productRepository.save(product));
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // LECTURE — entrepôts ayant la catégorie donnée (pour checkboxes admin)
+    // ─────────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<Long> findWarehouseIdsByCategory(Long categoryId) {
+        return productRepository.findWarehouseIdsByCategoryId(categoryId);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -147,6 +161,19 @@ public class ProductService {
                 .createdBy(creator)
                 .build();
 
+        return toResponse(productRepository.save(product));
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // MISE À JOUR AFFECTATION ENTREPÔTS (Admin)
+    // ─────────────────────────────────────────────────────────────
+
+    public ProductResponse updateWarehouses(Long id, Set<Long> warehouseIds) {
+        Product product = getProduct(id);
+        product.getWarehouses().clear();
+        for (Long wId : warehouseIds) {
+            product.getWarehouses().add(getWarehouse(wId));
+        }
         return toResponse(productRepository.save(product));
     }
 
@@ -281,6 +308,9 @@ public class ProductService {
     }
 
     public ProductResponse toResponse(Product p) {
+        Set<Long> warehouseIds = p.getWarehouses().stream()
+                .map(Warehouse::getId)
+                .collect(java.util.stream.Collectors.toSet());
         return ProductResponse.builder()
                 .id(p.getId())
                 .reference(p.getReference())
@@ -296,6 +326,7 @@ public class ProductService {
                 .categoryName(p.getCategory().getName())
                 .createdByUsername(p.getCreatedBy().getUsername())
                 .isAdminDefined(isAdminDefined(p))
+                .warehouseIds(warehouseIds)
                 .createdAt(p.getCreatedAt())
                 .updatedAt(p.getUpdatedAt())
                 .build();
