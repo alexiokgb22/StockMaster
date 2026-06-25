@@ -4,8 +4,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-import java.util.Set;
-
 @Data
 public class CreateSupplierRequest {
 
@@ -20,7 +18,4 @@ public class CreateSupplierRequest {
     private String email;
 
     private String contactName;
-
-    // Entrepôts auxquels ce fournisseur est affecté dès la création
-    private Set<Long> warehouseIds;
 }

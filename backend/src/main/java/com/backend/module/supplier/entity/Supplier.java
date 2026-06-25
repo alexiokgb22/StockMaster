@@ -5,7 +5,6 @@ import java.util.Set;
 
 import com.backend.module.purchaseorder.entity.PurchaseOrder;
 import com.backend.module.shared.entity.BaseEntity;
-import com.backend.module.warehouse.entity.Warehouse;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -45,16 +44,6 @@ public class Supplier extends BaseEntity {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "supplier_warehouses",
-        joinColumns = @JoinColumn(name = "supplier_id"),
-        inverseJoinColumns = @JoinColumn(name = "warehouse_id")
-    )
-    @JsonIgnore
-    @Builder.Default
-    private Set<Warehouse> warehouses = new HashSet<>();
 
     @OneToMany(mappedBy = "supplier", fetch = FetchType.LAZY)
     @JsonIgnore

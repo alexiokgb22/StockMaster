@@ -1,13 +1,12 @@
-package com.backend.module.purchaseorder.entity;
+package com.backend.module.reception.entity;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.backend.module.purchaseorderline.entity.PurchaseOrderLine;
+import com.backend.module.purchaseorder.entity.PurchaseOrder;
 import com.backend.module.shared.entity.BaseEntity;
-import com.backend.module.shared.enums.PurchaseOrderStatus;
-import com.backend.module.supplier.entity.Supplier;
+import com.backend.module.shared.enums.ReceptionStatus;
 import com.backend.module.user.entity.User;
 import com.backend.module.warehouse.entity.Warehouse;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -32,52 +31,60 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 @Entity
-@Table(name = "purchase_orders")
+@Table(name = "receptions")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-public class PurchaseOrder extends BaseEntity {
+public class Reception extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "order_number", nullable = false, unique = true, length = 100)
-    private String orderNumber;
+    @Column(name = "reception_number", nullable = false, unique = true, length = 100)
+    private String receptionNumber;
 
-    @Column(name = "total_amount")
-    private Double totalAmount;
-
-    @Column(name = "order_date")
-    private LocalDate orderDate;
-
-    @Column(name = "expected_date")
-    private LocalDate expectedDate;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private ReceptionStatus status;
 
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private PurchaseOrderStatus status;
+    // Date de validation par le gestionnaire
+    @Column(name = "validated_at")
+    private LocalDateTime validatedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "supplier_id", nullable = true)
-    private Supplier supplier;
+    // Raison du rejet (optionnel)
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
 
+    // La commande fournisseur à laquelle ce bon est rattaché
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "purchase_order_id", nullable = false)
+    private PurchaseOrder purchaseOrder;
+
+    // Entrepôt de réception
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id", nullable = false)
     private Warehouse warehouse;
 
+    // Magasinier qui a créé le bon
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id", nullable = false)
     private User createdBy;
 
-    @OneToMany(mappedBy = "purchaseOrder", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    // Gestionnaire qui a validé ou rejeté
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "validated_by_id")
+    private User validatedBy;
+
+    @OneToMany(mappedBy = "reception", fetch = FetchType.LAZY,
+               cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     @Builder.Default
-    private Set<PurchaseOrderLine> lines = new HashSet<>();
+    private Set<ReceptionLine> lines = new HashSet<>();
 }

@@ -1,6 +1,8 @@
 package com.backend.module.supplier.controller;
 
-import com.backend.module.supplier.dto.*;
+import com.backend.module.supplier.dto.CreateSupplierRequest;
+import com.backend.module.supplier.dto.SupplierResponse;
+import com.backend.module.supplier.dto.UpdateSupplierRequest;
 import com.backend.module.supplier.service.SupplierService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,8 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/suppliers")
@@ -39,26 +39,6 @@ public class SupplierController {
     @PreAuthorize("hasAuthority('supplier.read')")
     public ResponseEntity<SupplierResponse> getById(@PathVariable Long id) {
         return ResponseEntity.ok(supplierService.findById(id));
-    }
-
-    // GET /api/suppliers/{id}/warehouses — entrepôts affectés avec nb livraisons
-    @GetMapping("/{id}/warehouses")
-    @PreAuthorize("hasAuthority('supplier.read')")
-    public ResponseEntity<List<SupplierWarehouseResponse>> getWarehouses(@PathVariable Long id) {
-        return ResponseEntity.ok(supplierService.findWarehouses(id));
-    }
-
-    // GET /api/suppliers/{id}/warehouses/{warehouseId}/deliveries — historique
-    @GetMapping("/{id}/warehouses/{warehouseId}/deliveries")
-    @PreAuthorize("hasAuthority('supplier.read')")
-    public ResponseEntity<Page<DeliveryHistoryResponse>> getDeliveryHistory(
-            @PathVariable Long id,
-            @PathVariable Long warehouseId,
-            @RequestParam(defaultValue = "0")  int page,
-            @RequestParam(defaultValue = "20") int size
-    ) {
-        PageRequest pageable = PageRequest.of(page, size, Sort.by("orderDate").descending());
-        return ResponseEntity.ok(supplierService.findDeliveryHistory(id, warehouseId, pageable));
     }
 
     // POST /api/suppliers

@@ -3,8 +3,6 @@ package com.backend.module.supplier.dto;
 import jakarta.validation.constraints.Email;
 import lombok.Data;
 
-import java.util.Set;
-
 @Data
 public class UpdateSupplierRequest {
 
@@ -17,5 +15,4 @@ public class UpdateSupplierRequest {
     private String email;
 
     private String contactName;
-    private Set<Long> warehouseIds;
 }
