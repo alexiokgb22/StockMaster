@@ -36,8 +36,8 @@
           <td class="px-4 py-3 text-text-secondary">{{ s.phone ?? '—' }}</td>
           <td class="px-4 py-3 text-text-secondary">{{ s.email ?? '—' }}</td>
           <td class="px-4 py-3">
-            <span v-if="s.warehouseNames.length > 0" class="text-sm text-text-secondary">
-              {{ s.warehouseNames.join(', ') }}
+            <span v-if="s.warehouseNames?.length > 0" class="text-sm text-text-secondary">
+              {{ s.warehouseNames?.join(', ') }}
             </span>
             <span v-else class="text-xs italic text-text-secondary">Aucun entrepôt</span>
           </td>
@@ -126,7 +126,10 @@ async function fetchSuppliers() {
       page: page.value,
       size: 20,
     })
-    suppliers.value     = res.content
+    suppliers.value     = res.content.map((supplier) => ({
+      ...supplier,
+      warehouseNames: supplier.warehouseNames ?? [],
+    }))
     totalPages.value    = res.totalPages
     totalElements.value = res.totalElements
   } finally {
