@@ -1,28 +1,17 @@
 package com.backend.module.transfer.entity;
 
-import com.backend.module.product.entity.Product;
 import com.backend.module.shared.entity.BaseEntity;
 import com.backend.module.shared.enums.TransferStatus;
 import com.backend.module.user.entity.User;
 import com.backend.module.warehouse.entity.Warehouse;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "transfers")
@@ -41,32 +30,53 @@ public class Transfer extends BaseEntity {
     @Column(name = "transfer_number", nullable = false, unique = true, length = 100)
     private String transferNumber;
 
-    @Column(name = "quantity")
-    private Integer quantity;
-
-    @Column(name = "shipped_at")
-    private LocalDateTime shippedAt;
-
-    @Column(name = "received_at")
-    private LocalDateTime receivedAt;
+    @Column(name = "note", columnDefinition = "TEXT")
+    private String note;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private TransferStatus status;
 
+    // Date à laquelle l'admin a validé (stock source décrémenté)
+    @Column(name = "validated_at")
+    private LocalDateTime validatedAt;
+
+    // Date à laquelle le gestionnaire cible a confirmé la réception
+    @Column(name = "received_at")
+    private LocalDateTime receivedAt;
+
+    // Raison d'annulation
+    @Column(name = "cancellation_reason", columnDefinition = "TEXT")
+    private String cancellationReason;
+
+    // Entrepôt source (gestionnaire qui initie)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_warehouse_id", nullable = false)
     private Warehouse sourceWarehouse;
 
+    // Entrepôt cible (gestionnaire qui réceptionne)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "target_warehouse_id", nullable = false)
     private Warehouse targetWarehouse;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
-
+    // Gestionnaire source qui a créé le transfert
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by_id", nullable = false)
     private User createdBy;
+
+    // Admin qui a validé
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "validated_by_id")
+    private User validatedBy;
+
+    // Gestionnaire cible qui a confirmé la réception
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "received_by_id")
+    private User receivedBy;
+
+    @OneToMany(mappedBy = "transfer", fetch = FetchType.LAZY,
+               cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    @Builder.Default
+    private Set<TransferLine> lines = new HashSet<>();
 }

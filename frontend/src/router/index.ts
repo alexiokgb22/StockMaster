@@ -117,6 +117,27 @@ const routes = [
         component: () => import('@/pages/receptions/ReceptionsPage.vue'),
         meta: { permission: 'receipt.create' },
       },
+      // ── Sorties ───────────────────────────────────────────────
+      {
+        path: 'dispatches',
+        name: 'Dispatches',
+        component: () => import('@/pages/dispatches/DispatchesPage.vue'),
+        meta: { permission: 'dispatch.create' },
+      },
+      // ── Transferts ────────────────────────────────────────────
+      {
+        path: 'transfers',
+        name: 'Transfers',
+        component: () => import('@/pages/transfers/TransfersPage.vue'),
+        meta: { permission: 'transfer.create' },
+      },
+      {
+        // Vue admin : tous les transferts
+        path: 'admin/transfers',
+        name: 'AdminTransfers',
+        component: () => import('@/pages/transfers/TransfersPage.vue'),
+        meta: { permission: 'transfer.validate' },
+      },
       {
         path: 'forbidden',
         name: 'Forbidden',

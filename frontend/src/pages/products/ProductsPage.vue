@@ -21,7 +21,9 @@
           <option value="">Toutes les catégories</option>
           <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
         </select>
+        <!-- Filtre actif/inactif uniquement pour l'admin -->
         <select
+          v-if="isAdmin"
           v-model="filters.active"
           @change="fetchProducts"
           class="rounded-3xl border border-border bg-surface px-4 py-2 text-sm text-text-main outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
@@ -90,6 +92,7 @@
       v-if="showModal"
       :product="selectedProduct"
       :categories="categories"
+      :warehouse-id="isManager ? warehouseId ?? undefined : undefined"
       @close="showModal = false"
       @saved="onSaved"
     />
@@ -97,9 +100,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { productService } from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
+import { useAuthStore } from '@/stores/auth'
 import type { ProductResponse } from '@/types/product.types'
 import type { CategoryResponse } from '@/types/category.types'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -113,6 +117,11 @@ import ProductFormModal from '@/components/product/ProductFormModal.vue'
 import { useToastStore } from '@/stores/toast'
 
 const toast = useToastStore()
+const authStore = useAuthStore()
+
+const isAdmin   = computed(() => authStore.currentUser?.role === 'Administrateur')
+const isManager = computed(() => authStore.currentUser?.role === "Gestionnaire d'entrepôt")
+const warehouseId = computed(() => authStore.currentUser?.warehouseId)
 
 const products      = ref<ProductResponse[]>([])
 const categories    = ref<CategoryResponse[]>([])
@@ -142,16 +151,30 @@ function debouncedFetch() {
 async function fetchProducts() {
   loading.value = true
   try {
-    const res = await productService.listAll({
-      search:     filters.value.search || undefined,
-      categoryId: filters.value.categoryId ? Number(filters.value.categoryId) : undefined,
-      active:     filters.value.active !== '' ? filters.value.active === 'true' : undefined,
-      page:       page.value,
-      size:       20,
-    })
-    products.value      = res.content
-    totalPages.value    = res.totalPages
-    totalElements.value = res.totalElements
+    if (isManager.value && warehouseId.value) {
+      // Gestionnaire : produits de son entrepôt via /api/warehouses/{id}/products
+      const res = await productService.listByWarehouse(warehouseId.value, {
+        search:     filters.value.search || undefined,
+        categoryId: filters.value.categoryId ? Number(filters.value.categoryId) : undefined,
+        page:       page.value,
+        size:       20,
+      })
+      products.value      = res.content
+      totalPages.value    = res.totalPages
+      totalElements.value = res.totalElements
+    } else {
+      // Admin : catalogue global via /api/products
+      const res = await productService.listAll({
+        search:     filters.value.search || undefined,
+        categoryId: filters.value.categoryId ? Number(filters.value.categoryId) : undefined,
+        active:     filters.value.active !== '' ? filters.value.active === 'true' : undefined,
+        page:       page.value,
+        size:       20,
+      })
+      products.value      = res.content
+      totalPages.value    = res.totalPages
+      totalElements.value = res.totalElements
+    }
   } finally {
     loading.value = false
   }
@@ -159,8 +182,14 @@ async function fetchProducts() {
 
 async function fetchCategories() {
   try {
-    const res = await categoryService.listAll({ size: 200 })
-    categories.value = res.content
+    if (isManager.value && warehouseId.value) {
+      // Gestionnaire : catégories de son entrepôt uniquement
+      const res = await categoryService.listByWarehouse(warehouseId.value, { size: 200 })
+      categories.value = res.content
+    } else {
+      const res = await categoryService.listAll({ size: 200 })
+      categories.value = res.content
+    }
   } catch { /* silencieux */ }
 }
 

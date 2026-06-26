@@ -136,11 +136,20 @@ const supplyLinks = computed(() => {
   ])
 })
 
-const movementLinks = computed(() => [
-  { title: 'Réceptions', to: { name: 'Receptions' }, permission: 'receipt.create' },
-  { title: 'Sorties',    to: { name: 'NotFound' }, comingSoon: true },
-  { title: 'Transferts', to: { name: 'NotFound' }, comingSoon: true },
-])
+const movementLinks = computed(() => {
+  const isAdmin = currentUser.value?.role === 'Administrateur'
+  const isManager = currentUser.value?.role === "Gestionnaire d'entrepôt"
+  return filterLinks([
+    { title: 'Réceptions', to: { name: 'Receptions' }, permission: 'receipt.create' },
+    { title: 'Sorties',    to: { name: 'Dispatches' }, permission: 'dispatch.create' },
+    // Admin → vue globale / Gestionnaire → vue entrepôt
+    ...(isAdmin
+      ? [{ title: 'Transferts', to: { name: 'AdminTransfers' }, permission: 'transfer.validate' }]
+      : isManager
+        ? [{ title: 'Transferts', to: { name: 'Transfers' }, permission: 'transfer.create' }]
+        : []),
+  ])
+})
 
 const reportsLinks = computed(() => [
   { title: 'Rapports', to: { name: 'NotFound' }, comingSoon: true },

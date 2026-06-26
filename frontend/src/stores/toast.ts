@@ -22,5 +22,19 @@ export const useToastStore = defineStore('toast', {
     remove(id: string) {
       this.messages = this.messages.filter((toast) => toast.id !== id)
     },
+
+    // Raccourcis — correspondent aux appels déjà présents dans les pages
+    success(message: string, title = 'Succès') {
+      this.push({ variant: 'success', title, message })
+    },
+    error(message: string, title = 'Erreur') {
+      this.push({ variant: 'error', title, message })
+    },
+    warning(message: string, title = 'Attention') {
+      this.push({ variant: 'warning', title, message })
+    },
+    info(message: string, title = 'Information') {
+      this.push({ variant: 'info', title, message })
+    },
   },
 })

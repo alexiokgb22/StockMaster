@@ -147,6 +147,8 @@ public class ProductService {
 
         validateProductName(req.getName(), req.getCategoryId(), null);
 
+        Warehouse warehouse = getWarehouse(warehouseId);
+
         Product product = Product.builder()
                 .name(req.getName().trim())
                 .description(req.getDescription())
@@ -160,6 +162,9 @@ public class ProductService {
                 .category(category)
                 .createdBy(creator)
                 .build();
+
+        // Lier le produit à l'entrepôt — indispensable pour que findByWarehouseContext le remonte
+        product.getWarehouses().add(warehouse);
 
         return toResponse(productRepository.save(product));
     }
