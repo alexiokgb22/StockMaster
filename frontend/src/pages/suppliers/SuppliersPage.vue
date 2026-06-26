@@ -36,12 +36,6 @@
           <td class="px-4 py-3 text-text-secondary">{{ s.phone ?? '—' }}</td>
           <td class="px-4 py-3 text-text-secondary">{{ s.email ?? '—' }}</td>
           <td class="px-4 py-3">
-            <span v-if="s.warehouseNames.length > 0" class="text-sm text-text-secondary">
-              {{ s.warehouseNames.join(', ') }}
-            </span>
-            <span v-else class="text-xs italic text-text-secondary">Aucun entrepôt</span>
-          </td>
-          <td class="px-4 py-3">
             <StatusBadge :label="s.isActive ? 'Actif' : 'Inactif'" :variant="s.isActive ? 'success' : 'secondary'" />
           </td>
           <td class="px-4 py-3 space-x-2" @click.stop>
@@ -102,13 +96,12 @@ const selectedSupplier = ref<SupplierResponse | null>(null)
 const filters = ref({ search: '', active: '' })
 
 const columns = [
-  { key: 'name',       label: 'Nom' },
-  { key: 'city',       label: 'Ville' },
-  { key: 'phone',      label: 'Téléphone' },
-  { key: 'email',      label: 'Email' },
-  { key: 'warehouses', label: 'Entrepôts' },
-  { key: 'status',     label: 'Statut' },
-  { key: 'actions',    label: '' },
+  { key: 'name',    label: 'Nom' },
+  { key: 'city',    label: 'Ville' },
+  { key: 'phone',   label: 'Téléphone' },
+  { key: 'email',   label: 'Email' },
+  { key: 'status',  label: 'Statut' },
+  { key: 'actions', label: '' },
 ]
 
 let debounceTimer: ReturnType<typeof setTimeout>

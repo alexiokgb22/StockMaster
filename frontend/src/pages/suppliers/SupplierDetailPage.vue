@@ -1,131 +1,111 @@
 <template>
   <div class="space-y-6">
-    <!-- Retour -->
     <router-link :to="{ name: 'Suppliers' }" class="inline-flex items-center gap-1 text-sm text-primary hover:underline">
       ← Retour aux fournisseurs
     </router-link>
 
-    <!-- En-tête fournisseur -->
-    <div v-if="supplier" class="flex items-start justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-text-main">{{ supplier.name }}</h1>
-        <p class="text-text-secondary text-sm mt-1">
-          <span v-if="supplier.contactName">Contact : {{ supplier.contactName }} &nbsp;·&nbsp;</span>
-          <span v-if="supplier.phone">{{ supplier.phone }} &nbsp;·&nbsp;</span>
-          <span v-if="supplier.email">{{ supplier.email }}</span>
-        </p>
-        <p v-if="supplier.address || supplier.city" class="text-text-secondary text-sm">
-          {{ [supplier.address, supplier.city].filter(Boolean).join(', ') }}
-        </p>
-      </div>
-      <StatusBadge :label="supplier.isActive ? 'Actif' : 'Inactif'" :variant="supplier.isActive ? 'success' : 'secondary'" />
-    </div>
-    <div v-else-if="loadingSupplier" class="py-4 text-sm text-text-secondary">Chargement…</div>
+    <div v-if="loadingSupplier" class="py-8 text-center text-sm text-text-secondary">Chargement…</div>
 
-    <!-- Entrepôts affectés — vue liste pour sélectionner -->
-    <BaseCard v-if="!selectedWarehouse">
-      <h2 class="mb-4 text-base font-semibold text-text-main">Entrepôts approvisionnés</h2>
-
-      <div v-if="loadingWarehouses" class="py-6 text-center text-sm text-text-secondary">Chargement…</div>
-
-      <div v-else-if="supplierWarehouses.length === 0" class="py-6 text-center text-sm text-text-secondary italic">
-        Ce fournisseur n'est affecté à aucun entrepôt.
-      </div>
-
-      <div v-else class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div
-          v-for="w in supplierWarehouses"
-          :key="w.id"
-          class="group flex cursor-pointer items-center justify-between rounded-xl border border-border bg-surface px-4 py-3 transition hover:border-primary hover:bg-primary-light/30"
-          @click="selectWarehouse(w)"
-        >
-          <div>
-            <div class="font-medium text-text-main group-hover:text-primary">{{ w.name }}</div>
-            <div v-if="w.city" class="text-xs text-text-secondary">{{ w.city }}</div>
-          </div>
-          <div class="text-right">
-            <div class="text-lg font-bold text-primary">{{ w.deliveryCount }}</div>
-            <div class="text-xs text-text-secondary">livraison(s)</div>
-          </div>
-        </div>
-      </div>
-    </BaseCard>
-
-    <!-- Historique de livraisons pour l'entrepôt sélectionné -->
-    <BaseCard v-else>
-      <div class="mb-4 flex items-center justify-between">
+    <template v-else-if="supplier">
+      <!-- En-tête fournisseur -->
+      <div class="flex items-start justify-between">
         <div>
-          <button
-            class="mb-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            @click="selectedWarehouse = null"
+          <h1 class="text-2xl font-bold text-text-main">{{ supplier.name }}</h1>
+          <p class="text-text-secondary text-sm mt-1">
+            <span v-if="supplier.contactName">Contact : {{ supplier.contactName }} &nbsp;·&nbsp;</span>
+            <span v-if="supplier.phone">{{ supplier.phone }} &nbsp;·&nbsp;</span>
+            <span v-if="supplier.email">{{ supplier.email }}</span>
+          </p>
+          <p v-if="supplier.address || supplier.city" class="text-text-secondary text-sm">
+            {{ [supplier.address, supplier.city].filter(Boolean).join(', ') }}
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <StatusBadge
+            :label="supplier.isActive ? 'Actif' : 'Inactif'"
+            :variant="supplier.isActive ? 'success' : 'secondary'"
+          />
+          <BaseButton size="sm" variant="secondary" @click="openEdit">Modifier</BaseButton>
+        </div>
+      </div>
+
+      <!-- Historique des commandes -->
+      <BaseCard>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-semibold text-text-main">Historique des commandes</h2>
+          <span class="text-sm text-text-secondary">{{ totalOrders }} commande(s)</span>
+        </div>
+
+        <div v-if="loadingOrders" class="py-6 text-center text-sm text-text-secondary">
+          Chargement de l'historique…
+        </div>
+
+        <div v-else-if="orders.length === 0" class="py-6 text-center text-sm italic text-text-secondary">
+          Aucune commande associée à ce fournisseur pour l'instant.
+        </div>
+
+        <div v-else class="space-y-3">
+          <div
+            v-for="order in orders"
+            :key="order.id"
+            class="rounded-xl border border-border bg-surface p-4"
           >
-            ← Tous les entrepôts
-          </button>
-          <h2 class="text-base font-semibold text-text-main">
-            Livraisons — {{ selectedWarehouse.name }}
-          </h2>
-        </div>
-        <span class="text-sm text-text-secondary">{{ totalDeliveries }} commande(s)</span>
-      </div>
-
-      <div v-if="loadingHistory" class="py-6 text-center text-sm text-text-secondary">Chargement…</div>
-
-      <div v-else-if="deliveries.length === 0" class="py-6 text-center text-sm italic text-text-secondary">
-        Aucune livraison enregistrée pour cet entrepôt.
-      </div>
-
-      <div v-else class="space-y-3">
-        <div
-          v-for="d in deliveries"
-          :key="d.orderId"
-          class="rounded-xl border border-border bg-surface p-4 space-y-2"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <code class="rounded bg-gray-100 px-2 py-0.5 text-xs font-mono">{{ d.orderNumber }}</code>
-              <StatusBadge :label="statusLabel(d.status)" :variant="statusVariant(d.status)" />
-            </div>
-            <div class="text-right text-sm">
-              <span v-if="d.totalAmount != null" class="font-semibold text-text-main">{{ d.totalAmount.toLocaleString('fr-FR') }} €</span>
-              <div class="text-xs text-text-secondary">
-                {{ d.orderDate ? new Date(d.orderDate).toLocaleDateString('fr-FR') : '—' }}
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <code class="rounded bg-gray-100 px-2 py-0.5 text-xs font-mono">{{ order.orderNumber }}</code>
+                <StatusBadge :label="statusLabel(order.status)" :variant="statusVariant(order.status)" />
+                <span class="text-sm font-medium text-text-main">{{ order.warehouseName }}</span>
               </div>
+              <span class="text-sm text-text-secondary">
+                {{ order.orderDate ? new Date(order.orderDate).toLocaleDateString('fr-FR') : '—' }}
+              </span>
+            </div>
+
+            <!-- Lignes résumées -->
+            <div class="mt-2 flex flex-wrap gap-2">
+              <span
+                v-for="line in order.lines"
+                :key="line.id"
+                class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-text-secondary"
+              >
+                {{ line.productName }} × {{ line.quantity }}
+                <span v-if="line.unitPrice != null"> — {{ line.unitPrice.toLocaleString('fr-FR') }} €/u</span>
+              </span>
+            </div>
+
+            <div class="mt-2 flex flex-wrap gap-4 text-sm text-text-secondary">
+              <span v-if="order.totalAmount && order.totalAmount > 0">
+                Total : <span class="font-medium text-text-main">{{ order.totalAmount.toLocaleString('fr-FR') }} €</span>
+              </span>
+              <span v-if="order.expectedDate">
+                Livraison prévue : {{ new Date(order.expectedDate).toLocaleDateString('fr-FR') }}
+              </span>
+              <span>Par {{ order.createdByUsername }}</span>
             </div>
           </div>
+        </div>
 
-          <!-- Lignes de la commande -->
-          <div v-if="d.lines.length > 0" class="mt-2 overflow-x-auto">
-            <table class="w-full text-xs">
-              <thead>
-                <tr class="text-left text-text-secondary border-b border-border">
-                  <th class="pb-1 pr-4">Produit</th>
-                  <th class="pb-1 pr-4">Réf.</th>
-                  <th class="pb-1 pr-4 text-right">Qté</th>
-                  <th class="pb-1 pr-4 text-right">Reçu</th>
-                  <th class="pb-1 text-right">P.U.</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="l in d.lines" :key="l.productId" class="border-b border-border/50 last:border-0">
-                  <td class="py-1 pr-4">{{ l.productName }}</td>
-                  <td class="py-1 pr-4 font-mono text-text-secondary">{{ l.productReference }}</td>
-                  <td class="py-1 pr-4 text-right">{{ l.quantity }}</td>
-                  <td class="py-1 pr-4 text-right">{{ l.receivedQty ?? '—' }}</td>
-                  <td class="py-1 text-right">{{ l.unitPrice != null ? l.unitPrice + ' €' : '—' }}</td>
-                </tr>
-              </tbody>
-            </table>
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="mt-4 flex items-center justify-between">
+          <span class="text-sm text-text-secondary">Page {{ page + 1 }} / {{ totalPages }}</span>
+          <div class="flex gap-2">
+            <BaseButton size="sm" variant="secondary" :disabled="page === 0" @click="page--; fetchOrders()">
+              Précédent
+            </BaseButton>
+            <BaseButton size="sm" variant="secondary" :disabled="page + 1 >= totalPages" @click="page++; fetchOrders()">
+              Suivant
+            </BaseButton>
           </div>
         </div>
-      </div>
+      </BaseCard>
+    </template>
 
-      <!-- Pagination historique -->
-      <div v-if="totalDeliveryPages > 1" class="mt-4 flex items-center justify-end gap-2">
-        <BaseButton size="sm" variant="secondary" :disabled="deliveryPage === 0" @click="deliveryPage--; fetchHistory()">Précédent</BaseButton>
-        <span class="py-1 text-sm">{{ deliveryPage + 1 }} / {{ totalDeliveryPages }}</span>
-        <BaseButton size="sm" variant="secondary" :disabled="deliveryPage + 1 >= totalDeliveryPages" @click="deliveryPage++; fetchHistory()">Suivant</BaseButton>
-      </div>
-    </BaseCard>
+    <SupplierFormModal
+      v-if="showModal && supplier"
+      :supplier="supplier"
+      @close="showModal = false"
+      @saved="onSaved"
+    />
   </div>
 </template>
 
@@ -133,71 +113,81 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { supplierService } from '@/services/supplier.service'
-import type { SupplierResponse, SupplierWarehouseResponse, DeliveryHistoryResponse } from '@/types/supplier.types'
+import { purchaseOrderService } from '@/services/purchaseorder.service'
+import type { SupplierResponse } from '@/types/supplier.types'
+import type { PurchaseOrderResponse, PurchaseOrderStatus } from '@/types/purchaseorder.types'
 import BaseCard from '@/components/ui/BaseCard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
+import SupplierFormModal from '@/components/supplier/SupplierFormModal.vue'
 
 const route = useRoute()
-
-const supplier           = ref<SupplierResponse | null>(null)
-const supplierWarehouses = ref<SupplierWarehouseResponse[]>([])
-const deliveries         = ref<DeliveryHistoryResponse[]>([])
-const selectedWarehouse  = ref<SupplierWarehouseResponse | null>(null)
-
-const loadingSupplier  = ref(false)
-const loadingWarehouses = ref(false)
-const loadingHistory   = ref(false)
-
-const deliveryPage         = ref(0)
-const totalDeliveryPages   = ref(1)
-const totalDeliveries      = ref(0)
-
 const supplierId = Number(route.params.id)
 
-const statusLabel = (s: DeliveryHistoryResponse['status']) => ({
-  DRAFT: 'Brouillon', VALIDATED: 'Validée', DELIVERED: 'Livrée', CANCELLED: 'Annulée',
-}[s] ?? s)
+const supplier = ref<SupplierResponse | null>(null)
+const loadingSupplier = ref(false)
+const showModal = ref(false)
 
-const statusVariant = (s: DeliveryHistoryResponse['status']) => ({
-  DRAFT: 'secondary', VALIDATED: 'info', DELIVERED: 'success', CANCELLED: 'danger',
-}[s] ?? 'secondary') as 'secondary' | 'info' | 'success' | 'danger'
+const orders = ref<PurchaseOrderResponse[]>([])
+const loadingOrders = ref(false)
+const page = ref(0)
+const totalPages = ref(1)
+const totalOrders = ref(0)
 
-async function selectWarehouse(w: SupplierWarehouseResponse) {
-  selectedWarehouse.value = w
-  deliveryPage.value = 0
-  await fetchHistory()
-}
+const statusLabel = (s: PurchaseOrderStatus) =>
+  ({
+    DRAFT: 'En attente de validation',
+    VALIDATED: 'Validée',
+    DELIVERED: 'En cours de réception',
+    CLOSED: 'Clôturée',
+    CANCELLED: 'Annulée',
+  }[s] ?? s)
 
-async function fetchHistory() {
-  if (!selectedWarehouse.value) return
-  loadingHistory.value = true
+const statusVariant = (s: PurchaseOrderStatus) =>
+  ({
+    DRAFT: 'secondary',
+    VALIDATED: 'info',
+    DELIVERED: 'warning',
+    CLOSED: 'success',
+    CANCELLED: 'danger',
+  }[s] ?? 'secondary') as any
+
+async function fetchOrders() {
+  loadingOrders.value = true
   try {
-    const res = await supplierService.getDeliveryHistory(supplierId, selectedWarehouse.value.id, {
-      page: deliveryPage.value,
+    const res = await purchaseOrderService.listBySupplierId(supplierId, {
+      page: page.value,
       size: 10,
     })
-    deliveries.value         = res.content
-    totalDeliveries.value    = res.totalElements
-    totalDeliveryPages.value = res.totalPages
+    orders.value = res.content
+    totalPages.value = res.totalPages
+    totalOrders.value = res.totalElements
   } finally {
-    loadingHistory.value = false
+    loadingOrders.value = false
+  }
+}
+
+function openEdit() {
+  showModal.value = true
+}
+
+async function onSaved() {
+  showModal.value = false
+  loadingSupplier.value = true
+  try {
+    supplier.value = await supplierService.getById(supplierId)
+  } finally {
+    loadingSupplier.value = false
   }
 }
 
 onMounted(async () => {
   loadingSupplier.value = true
-  loadingWarehouses.value = true
   try {
-    const [s, ws] = await Promise.all([
-      supplierService.getById(supplierId),
-      supplierService.getWarehouses(supplierId),
-    ])
-    supplier.value = s
-    supplierWarehouses.value = ws
+    supplier.value = await supplierService.getById(supplierId)
   } finally {
     loadingSupplier.value = false
-    loadingWarehouses.value = false
   }
+  fetchOrders()
 })
 </script>

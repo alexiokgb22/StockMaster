@@ -1,11 +1,5 @@
 import http from './http'
-import type {
-  SupplierResponse,
-  SupplierWarehouseResponse,
-  DeliveryHistoryResponse,
-  CreateSupplierRequest,
-  UpdateSupplierRequest,
-} from '@/types/supplier.types'
+import type { SupplierResponse, CreateSupplierRequest, UpdateSupplierRequest } from '@/types/supplier.types'
 
 interface PaginatedResponse<T> {
   content: T[]
@@ -20,16 +14,6 @@ export const supplierService = {
 
   getById: (id: number): Promise<SupplierResponse> =>
     http.get(`/api/suppliers/${id}`).then((r) => r.data),
-
-  getWarehouses: (id: number): Promise<SupplierWarehouseResponse[]> =>
-    http.get(`/api/suppliers/${id}/warehouses`).then((r) => r.data),
-
-  getDeliveryHistory: (
-    supplierId: number,
-    warehouseId: number,
-    params?: { page?: number; size?: number },
-  ): Promise<PaginatedResponse<DeliveryHistoryResponse>> =>
-    http.get(`/api/suppliers/${supplierId}/warehouses/${warehouseId}/deliveries`, { params }).then((r) => r.data),
 
   create: (data: CreateSupplierRequest): Promise<SupplierResponse> =>
     http.post('/api/suppliers', data).then((r) => r.data),

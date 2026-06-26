@@ -124,14 +124,20 @@ const inventoryLinks = computed(() => {
 
 const supplyLinks = computed(() => {
   const isAdmin = currentUser.value?.role === 'Administrateur'
+  const isManager = currentUser.value?.role === "Gestionnaire d'entrepôt"
   return filterLinks([
     ...(isAdmin ? [{ title: 'Fournisseurs', to: { name: 'Suppliers' }, permission: 'supplier.read' }] : []),
-    { title: 'Commandes', to: { name: 'NotFound' }, comingSoon: true },
+    // Admin → vue globale toutes commandes / Gestionnaire → commandes de son entrepôt
+    ...(isAdmin
+      ? [{ title: 'Commandes', to: { name: 'AdminPurchaseOrders' }, permission: 'receipt.validate' }]
+      : isManager
+        ? [{ title: 'Commandes', to: { name: 'PurchaseOrders' }, permission: 'receipt.create' }]
+        : []),
   ])
 })
 
 const movementLinks = computed(() => [
-  { title: 'Réceptions', to: { name: 'NotFound' }, comingSoon: true },
+  { title: 'Réceptions', to: { name: 'Receptions' }, permission: 'receipt.create' },
   { title: 'Sorties',    to: { name: 'NotFound' }, comingSoon: true },
   { title: 'Transferts', to: { name: 'NotFound' }, comingSoon: true },
 ])

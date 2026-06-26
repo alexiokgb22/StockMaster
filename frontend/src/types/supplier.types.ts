@@ -7,38 +7,8 @@ export interface SupplierResponse {
   email: string | null
   contactName: string | null
   isActive: boolean
-  warehouseIds: number[]
-  warehouseNames: string[]
   createdAt: string
   updatedAt: string
-}
-
-export interface SupplierWarehouseResponse {
-  id: number
-  name: string
-  city: string | null
-  deliveryCount: number
-}
-
-export interface DeliveryHistoryResponse {
-  orderId: number
-  orderNumber: string
-  status: 'DRAFT' | 'VALIDATED' | 'DELIVERED' | 'CANCELLED'
-  orderDate: string | null
-  expectedDate: string | null
-  totalAmount: number | null
-  createdByUsername: string
-  lines: DeliveryLineResponse[]
-  createdAt: string
-}
-
-export interface DeliveryLineResponse {
-  productId: number
-  productName: string
-  productReference: string
-  quantity: number
-  receivedQty: number | null
-  unitPrice: number | null
 }
 
 export interface CreateSupplierRequest {
@@ -48,7 +18,6 @@ export interface CreateSupplierRequest {
   phone?: string
   email?: string
   contactName?: string
-  warehouseIds?: number[]
 }
 
 export interface UpdateSupplierRequest {
@@ -58,5 +27,4 @@ export interface UpdateSupplierRequest {
   phone?: string
   email?: string
   contactName?: string
-  warehouseIds?: number[]
 }
