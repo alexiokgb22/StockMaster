@@ -102,13 +102,12 @@ const selectedSupplier = ref<SupplierResponse | null>(null)
 const filters = ref({ search: '', active: '' })
 
 const columns = [
-  { key: 'name',       label: 'Nom' },
-  { key: 'city',       label: 'Ville' },
-  { key: 'phone',      label: 'Téléphone' },
-  { key: 'email',      label: 'Email' },
-  { key: 'warehouses', label: 'Entrepôts' },
-  { key: 'status',     label: 'Statut' },
-  { key: 'actions',    label: '' },
+  { key: 'name',    label: 'Nom' },
+  { key: 'city',    label: 'Ville' },
+  { key: 'phone',   label: 'Téléphone' },
+  { key: 'email',   label: 'Email' },
+  { key: 'status',  label: 'Statut' },
+  { key: 'actions', label: '' },
 ]
 
 let debounceTimer: ReturnType<typeof setTimeout>

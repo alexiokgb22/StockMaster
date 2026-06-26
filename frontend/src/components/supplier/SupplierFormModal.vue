@@ -23,23 +23,6 @@
         </FormField>
       </div>
 
-      <!-- Entrepôts -->
-      <FormField label="Entrepôts affectés">
-        <div v-if="loadingWarehouses" class="text-xs text-text-secondary">Chargement…</div>
-        <div v-else-if="allWarehouses.length > 0" class="space-y-1 max-h-40 overflow-y-auto rounded-lg border border-border p-2">
-          <label
-            v-for="w in allWarehouses"
-            :key="w.id"
-            class="flex items-center gap-2 cursor-pointer rounded px-2 py-1 hover:bg-primary-light/30 text-sm"
-          >
-            <input type="checkbox" :value="w.id" v-model="form.warehouseIds" class="accent-primary" />
-            <span>{{ w.name }}</span>
-            <span v-if="w.city" class="text-xs text-text-secondary">— {{ w.city }}</span>
-          </label>
-        </div>
-        <p class="mt-1 text-xs text-text-secondary">Ce fournisseur approvisionne les entrepôts sélectionnés.</p>
-      </FormField>
-
       <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
 
       <div class="flex justify-end gap-3 pt-2">
@@ -51,11 +34,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { supplierService } from '@/services/supplier.service'
-import { warehouseService } from '@/services/warehouse.service'
 import type { SupplierResponse, CreateSupplierRequest, UpdateSupplierRequest } from '@/types/supplier.types'
-import type { WarehouseResponse } from '@/types/warehouse.types'
 import BaseModal from '@/components/ui/BaseModal.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
@@ -66,44 +47,14 @@ const emit = defineEmits<{ close: []; saved: [] }>()
 
 const saving = ref(false)
 const error = ref('')
-const loadingWarehouses = ref(false)
-const allWarehouses = ref<WarehouseResponse[]>([])
 
-const form = ref({
-  name: '',
-  contactName: '',
-  phone: '',
-  email: '',
-  city: '',
-  address: '',
-  warehouseIds: [] as number[],
-})
+const form = ref({ name: '', contactName: '', phone: '', email: '', city: '', address: '' })
 
 watch(() => props.supplier, (s) => {
-  if (s) {
-    form.value = {
-      name: s.name,
-      contactName: s.contactName ?? '',
-      phone: s.phone ?? '',
-      email: s.email ?? '',
-      city: s.city ?? '',
-      address: s.address ?? '',
-      warehouseIds: [...s.warehouseIds],
-    }
-  } else {
-    form.value = { name: '', contactName: '', phone: '', email: '', city: '', address: '', warehouseIds: [] }
-  }
+  form.value = s
+    ? { name: s.name, contactName: s.contactName ?? '', phone: s.phone ?? '', email: s.email ?? '', city: s.city ?? '', address: s.address ?? '' }
+    : { name: '', contactName: '', phone: '', email: '', city: '', address: '' }
 }, { immediate: true })
-
-onMounted(async () => {
-  loadingWarehouses.value = true
-  try {
-    const res = await warehouseService.list({ size: 200, active: true })
-    allWarehouses.value = res.content
-  } finally {
-    loadingWarehouses.value = false
-  }
-})
 
 async function handleSubmit() {
   error.value = ''
@@ -117,7 +68,6 @@ async function handleSubmit() {
         email: form.value.email || undefined,
         city: form.value.city || undefined,
         address: form.value.address || undefined,
-        warehouseIds: form.value.warehouseIds,
       }
       await supplierService.update(props.supplier.id, payload)
     } else {
@@ -128,7 +78,6 @@ async function handleSubmit() {
         email: form.value.email || undefined,
         city: form.value.city || undefined,
         address: form.value.address || undefined,
-        warehouseIds: form.value.warehouseIds.length > 0 ? form.value.warehouseIds : undefined,
       }
       await supplierService.create(payload)
     }

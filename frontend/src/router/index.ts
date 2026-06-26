@@ -95,6 +95,28 @@ const routes = [
         component: () => import('@/pages/warehouses/WarehouseDetailPage.vue'),
         meta: { permission: 'warehouse.read' },
       },
+      // ── Commandes fournisseurs ────────────────────────────────
+      {
+        // Vue Gestionnaire : commandes de son entrepôt
+        path: 'orders',
+        name: 'PurchaseOrders',
+        component: () => import('@/pages/orders/PurchaseOrdersPage.vue'),
+        meta: { permission: 'receipt.create' },
+      },
+      {
+        // Vue Admin : toutes les commandes de tous les entrepôts
+        path: 'admin/orders',
+        name: 'AdminPurchaseOrders',
+        component: () => import('@/pages/orders/AdminPurchaseOrdersPage.vue'),
+        meta: { permission: 'receipt.validate' },
+      },
+      // ── Réceptions ────────────────────────────────────────────
+      {
+        path: 'receptions',
+        name: 'Receptions',
+        component: () => import('@/pages/receptions/ReceptionsPage.vue'),
+        meta: { permission: 'receipt.create' },
+      },
       {
         path: 'forbidden',
         name: 'Forbidden',
