@@ -14,34 +14,30 @@ import java.util.Optional;
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
-    /** Détail complet avec toutes les lignes et leurs associations. */
+    // Récupération complète avec lignes (pour le détail)
     @Query("""
         SELECT i FROM Inventory i
         JOIN FETCH i.warehouse
         JOIN FETCH i.createdBy
         LEFT JOIN FETCH i.lines l
+<<<<<<< HEAD
         LEFT JOIN FETCH l.product p
         LEFT JOIN FETCH p.category
         LEFT JOIN FETCH l.stock
+>>>>>>> e23d4fc9a67e8abf52d5575486bdb7f802881c1d
         LEFT JOIN FETCH l.zone
         WHERE i.id = :id
         """)
-    Optional<Inventory> findByIdWithDetails(@Param("id") Long id);
 
-    /** Liste paginée pour un entrepôt avec filtre statut optionnel. */
+    // Liste paginée pour un entrepôt
     @Query("""
         SELECT i FROM Inventory i
         JOIN FETCH i.warehouse
         JOIN FETCH i.createdBy
         WHERE i.warehouse.id = :warehouseId
-          AND (:status IS NULL OR i.inventoryStatus = :status)
-        """)
-    Page<Inventory> findByWarehouseWithFilters(
-        @Param("warehouseId") Long warehouseId,
-        @Param("status") InventoryStatus status,
+        @Param("warehouseId") Long warehouseId,    
         Pageable pageable
     );
 
-    /** Vérifie qu'aucun inventaire IN_PROGRESS n'existe déjà pour cet entrepôt. */
-    boolean existsByWarehouseIdAndInventoryStatus(Long warehouseId, InventoryStatus status);
+}
 }

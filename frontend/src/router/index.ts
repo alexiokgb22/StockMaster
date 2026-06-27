@@ -123,6 +123,13 @@ const routes = [
         component: () => import('@/pages/receptions/ReceptionsPage.vue'),
         meta: { permission: 'receipt.create' },
       },
+      // ── Inventaires ───────────────────────────────────────────
+      {
+        path: 'inventories',
+        name: 'Inventories',
+        component: () => import('@/pages/inventories/InventoriesPage.vue'),
+        meta: { permission: 'inventory.create' },
+      },
       // ── Sorties ───────────────────────────────────────────────
       {
         path: 'dispatches',

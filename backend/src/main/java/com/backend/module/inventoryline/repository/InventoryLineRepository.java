@@ -11,19 +11,22 @@ import java.util.Optional;
 @Repository
 public interface InventoryLineRepository extends JpaRepository<InventoryLine, Long> {
 
-    /** Vérifie qu'une ligne pour ce stock n'existe pas déjà dans l'inventaire. */
-    boolean existsByInventoryIdAndStockId(Long inventoryId, Long stockId);
-
-    /** Charge une ligne avec toutes ses associations pour mise à jour. */
     @Query("""
         SELECT l FROM InventoryLine l
-        JOIN FETCH l.inventory
+        JOIN FETCH l.inventory i
+        JOIN FETCH l.stock s
         JOIN FETCH l.product p
         JOIN FETCH p.category
-        JOIN FETCH l.stock s
-        JOIN FETCH s.warehouse
         JOIN FETCH l.zone
         WHERE l.id = :id
+          AND i.warehouse.id = :warehouseId
         """)
-    Optional<InventoryLine> findByIdWithDetails(@Param("id") Long id);
+    Optional<InventoryLine> findByIdAndWarehouseId(
+        @Param("id") Long id,
+        @Param("warehouseId") Long warehouseId
+    );
+
+    // Compter les lignes non encore saisies (actualQty IS NULL)
+    @Query("SELECT COUNT(l) FROM InventoryLine l WHERE l.inventory.id = :inventoryId AND l.actualQty IS NULL")
+    long countUncounted(@Param("inventoryId") Long inventoryId);
 }

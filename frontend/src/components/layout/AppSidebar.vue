@@ -117,13 +117,16 @@ const logisticsLinks = computed(() =>
 
 const inventoryLinks = computed(() => {
   const isAdmin = currentUser.value?.role === 'Administrateur'
+  const isManager = currentUser.value?.role === "Gestionnaire d'entrepôt"
+  const isStorekeeper = currentUser.value?.role === 'Magasinier'
   return filterLinks([
     // Catégories : admin uniquement — le gestionnaire passe par l'onglet de son entrepôt
     ...(isAdmin ? [{ title: 'Catégories', to: { name: 'Categories' }, permission: 'category.read' }] : []),
     // Produits : admin → page catalogue globale / gestionnaire → onglet entrepôt
     ...(isAdmin ? [{ title: 'Produits', to: { name: 'Products' }, permission: 'product.read' }] : []),
     { title: 'Stocks',      to: { name: 'Stocks' }, permission: 'stock.read' },
-    { title: 'Inventaires', to: { name: 'NotFound' }, comingSoon: true },
+    // Inventaires : gestionnaire et magasinier
+    ...((isManager || isStorekeeper) ? [{ title: 'Inventaires', to: { name: 'Inventories' }, permission: 'inventory.create' }] : []),
   ])
 })
 

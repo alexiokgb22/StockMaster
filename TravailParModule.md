@@ -79,5 +79,3 @@ Module 19 → Prévision intelligente Nécessite au minimum 3-6 mois de données
 
 Ma recommandation concrète
 Commence par la Phase 1 complète — catégories, zones, fournisseurs. Ce sont trois modules CRUD simples qui vont te permettre de valider ton pattern (repository → service → controller → DTO → frontend) une fois proprement, puis de le répliquer rapidement sur les modules suivants.
-
-On attaque lequel en premier ?

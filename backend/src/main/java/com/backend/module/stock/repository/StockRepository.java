@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -83,4 +84,32 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
           AND s.quantityAvailable < s.minStock
         """)
     long countBelowMinByWarehouse(@Param("warehouseId") Long warehouseId);
+
+    // ── Snapshot pour inventaire FULL ────────────────────────────
+    @Query("""
+        SELECT s FROM Stock s
+        JOIN FETCH s.product p
+        JOIN FETCH p.category
+        JOIN FETCH s.warehouse
+        JOIN FETCH s.zone
+        WHERE s.warehouse.id = :warehouseId
+        ORDER BY s.zone.name ASC, p.name ASC
+        """)
+    List<Stock> findAllByWarehouseId(@Param("warehouseId") Long warehouseId);
+
+    // ── Snapshot pour inventaire PARTIAL (par zones) ─────────────
+    @Query("""
+        SELECT s FROM Stock s
+        JOIN FETCH s.product p
+        JOIN FETCH p.category
+        JOIN FETCH s.warehouse
+        JOIN FETCH s.zone z
+        WHERE s.warehouse.id = :warehouseId
+          AND z.id IN :zoneIds
+        ORDER BY z.name ASC, p.name ASC
+        """)
+    List<Stock> findAllByWarehouseIdAndZoneIdIn(
+        @Param("warehouseId") Long warehouseId,
+        @Param("zoneIds") List<Long> zoneIds
+    );
 }
