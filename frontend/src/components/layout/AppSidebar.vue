@@ -34,6 +34,11 @@
       <SidebarSection label="Approvisionnement" :items="supplyLinks" />
       <SidebarSection label="Mouvements"        :items="movementLinks" />
       <SidebarSection label="Rapports"          :items="reportsLinks" />
+      <SidebarSection
+        v-if="traceabilityLinks.length"
+        label="Audit"
+        :items="traceabilityLinks"
+      />
     </nav>
 
     <!-- Carte entrepôt — visible pour gestionnaire et magasinier -->
@@ -154,4 +159,10 @@ const movementLinks = computed(() => {
 const reportsLinks = computed(() => [
   { title: 'Rapports', to: { name: 'NotFound' }, comingSoon: true },
 ])
+
+const traceabilityLinks = computed(() =>
+  filterLinks([
+    { title: 'Traçabilité', to: { name: 'Traceability' }, permission: 'audit.view' },
+  ]),
+)
 </script>

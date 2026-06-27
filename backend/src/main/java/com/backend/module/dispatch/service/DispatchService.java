@@ -1,5 +1,6 @@
 package com.backend.module.dispatch.service;
 
+import com.backend.module.auditlog.annotation.Auditable;
 import com.backend.exception.BusinessException;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.module.dispatch.dto.CreateDispatchRequest;
@@ -90,6 +91,8 @@ public class DispatchService {
     //   3. Chaque (produit, zone) doit être unique dans le bon.
     // ─────────────────────────────────────────────────────────────
 
+    @Auditable(module = "dispatch", action = "CREATE", entity = "Dispatch",
+               description = "Bon de sortie créé")
     public DispatchResponse create(Long warehouseId, CreateDispatchRequest req) {
         Warehouse warehouse = getWarehouse(warehouseId);
         User creator = currentUserEntity();
@@ -147,6 +150,8 @@ public class DispatchService {
     // Décrémente le stock + génère StockMovement EXIT
     // ─────────────────────────────────────────────────────────────
 
+    @Auditable(module = "dispatch", action = "VALIDATE", entity = "Dispatch",
+               description = "Bon de sortie validé — stock décrémenté")
     public DispatchResponse validate(Long warehouseId, Long dispatchId) {
         Dispatch dispatch = getDispatchInWarehouse(dispatchId, warehouseId);
         User validator = currentUserEntity();
@@ -201,6 +206,8 @@ public class DispatchService {
     // Aucune modification de stock
     // ─────────────────────────────────────────────────────────────
 
+    @Auditable(module = "dispatch", action = "REJECT", entity = "Dispatch",
+               description = "Bon de sortie rejeté")
     public DispatchResponse reject(Long warehouseId, Long dispatchId, RejectDispatchRequest req) {
         Dispatch dispatch = getDispatchInWarehouse(dispatchId, warehouseId);
         User validator = currentUserEntity();

@@ -1,5 +1,6 @@
 package com.backend.module.transfer.service;
 
+import com.backend.module.auditlog.annotation.Auditable;
 import com.backend.exception.BusinessException;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.module.product.entity.Product;
@@ -119,6 +120,8 @@ public class TransferService {
     //   3. Pas de décrément immédiat — l'admin valide d'abord.
     // ─────────────────────────────────────────────────────────────
 
+    @Auditable(module = "transfer", action = "CREATE", entity = "Transfer",
+               description = "Transfert inter-entrepôts créé")
     public TransferResponse create(Long sourceWarehouseId, CreateTransferRequest req) {
         Warehouse sourceWarehouse = getWarehouse(sourceWarehouseId);
         Warehouse targetWarehouse = getWarehouse(req.getTargetWarehouseId());
@@ -180,6 +183,8 @@ public class TransferService {
     // Génère StockMovement TRANSFER côté source
     // ─────────────────────────────────────────────────────────────
 
+    @Auditable(module = "transfer", action = "VALIDATE", entity = "Transfer",
+               description = "Transfert validé — stock source décrémenté")
     public TransferResponse validate(Long transferId) {
         Transfer transfer = getTransfer(transferId);
         User validator = currentUserEntity();
@@ -238,6 +243,8 @@ public class TransferService {
     // Génère StockMovement ENTRY côté cible
     // ─────────────────────────────────────────────────────────────
 
+    @Auditable(module = "transfer", action = "RECEIVE", entity = "Transfer",
+               description = "Transfert reçu — stock cible incrémenté")
     public TransferResponse receive(Long targetWarehouseId, Long transferId,
                                     ReceiveTransferRequest req) {
         Transfer transfer = getTransfer(transferId);
@@ -335,6 +342,8 @@ public class TransferService {
     // Si VALIDATED : rollback du stock source
     // ─────────────────────────────────────────────────────────────
 
+    @Auditable(module = "transfer", action = "CANCEL", entity = "Transfer",
+               description = "Transfert annulé")
     public TransferResponse cancel(Long transferId, CancelTransferRequest req) {
         Transfer transfer = getTransfer(transferId);
         User canceller = currentUserEntity();

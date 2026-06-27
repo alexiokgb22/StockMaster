@@ -1,5 +1,6 @@
 package com.backend.module.reception.service;
 
+import com.backend.module.auditlog.annotation.Auditable;
 import com.backend.exception.BusinessException;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.module.purchaseorder.entity.PurchaseOrder;
@@ -105,6 +106,8 @@ public class ReceptionService {
     // CRÉATION — Magasinier crée un bon de réception (PENDING)
     // ─────────────────────────────────────────────────────────────
 
+    @Auditable(module = "reception", action = "CREATE", entity = "Reception",
+               description = "Nouveau bon de réception créé")
     public ReceptionResponse create(Long warehouseId, CreateReceptionRequest req) {
         Warehouse warehouse = getWarehouse(warehouseId);
         User creator = currentUserEntity();
@@ -171,6 +174,8 @@ public class ReceptionService {
     // Met à jour le stock + génère les StockMovement + clôture la commande
     // ─────────────────────────────────────────────────────────────
 
+    @Auditable(module = "reception", action = "VALIDATE", entity = "Reception",
+               description = "Bon de réception validé — stock mis à jour")
     public ReceptionResponse validate(Long warehouseId, Long receptionId) {
         Reception reception = getReceptionInWarehouse(receptionId, warehouseId);
         User validator = currentUserEntity();
@@ -238,6 +243,8 @@ public class ReceptionService {
     // La commande repasse à DELIVERED pour une nouvelle réception
     // ─────────────────────────────────────────────────────────────
 
+    @Auditable(module = "reception", action = "REJECT", entity = "Reception",
+               description = "Bon de réception rejeté")
     public ReceptionResponse reject(Long warehouseId, Long receptionId, RejectReceptionRequest req) {
         Reception reception = getReceptionInWarehouse(receptionId, warehouseId);
         User validator = currentUserEntity();

@@ -149,6 +149,12 @@ const routes = [
         name: 'Forbidden',
         component: () => import('@/pages/ForbiddenView.vue'),
       },
+      {
+        path: 'traceability',
+        name: 'Traceability',
+        component: () => import('@/pages/traceability/TraceabilityPage.vue'),
+        meta: { permission: 'audit.view' },
+      },
     ],
   },
   {
