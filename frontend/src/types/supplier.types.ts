@@ -7,6 +7,8 @@ export interface SupplierResponse {
   email: string | null
   contactName: string | null
   isActive: boolean
+  warehouseIds?: number[]
+  warehouseNames?: string[]
   createdAt: string
   updatedAt: string
 }
@@ -18,6 +20,7 @@ export interface CreateSupplierRequest {
   phone?: string
   email?: string
   contactName?: string
+  warehouseIds?: number[]
 }
 
 export interface UpdateSupplierRequest {
@@ -27,4 +30,5 @@ export interface UpdateSupplierRequest {
   phone?: string
   email?: string
   contactName?: string
+  warehouseIds?: number[]
 }

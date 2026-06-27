@@ -161,6 +161,8 @@ public class ProductService {
                 .createdBy(creator)
                 .build();
 
+        product.getWarehouses().add(getWarehouse(warehouseId));
+
         return toResponse(productRepository.save(product));
     }
 
