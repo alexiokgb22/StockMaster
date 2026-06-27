@@ -55,4 +55,7 @@ public interface ReceptionRepository extends JpaRepository<Reception, Long> {
     boolean existsByPurchaseOrderIdAndStatus(Long purchaseOrderId, ReceptionStatus status);
 
     boolean existsByReceptionNumber(String receptionNumber);
+
+    /** Compte les bons d'un statut sur tout le système (dashboard global). */
+    long countByStatus(ReceptionStatus status);
 }

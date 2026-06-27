@@ -29,4 +29,7 @@ public interface SupplierRepository extends JpaRepository<Supplier, Long> {
     );
 
     Optional<Supplier> findById(Long id);
+
+    /** Comptage pour le dashboard global. */
+    long countByIsActive(Boolean isActive);
 }

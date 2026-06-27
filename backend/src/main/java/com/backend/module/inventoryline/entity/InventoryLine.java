@@ -23,13 +23,12 @@ public class InventoryLine extends BaseEntity {
     @Column(name = "id")
     private Long id;
 
-
     /** Quantité théorique au moment de la création de l'inventaire (copie de stock.quantityAvailable). */
     @Column(name = "theoretical_qty")
     private Integer theoreticalQty;
 
     /** Quantité physique saisie par le magasinier pendant le comptage. */
-
+    @Column(name = "actual_qty")
     private Integer actualQty;
 
     @Column(name = "note", length = 500)
@@ -38,18 +37,6 @@ public class InventoryLine extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inventory_id", nullable = false)
     private Inventory inventory;
-
-    // Ligne de stock concernée — contient le produit ET la zone
-    // Lien direct vers Stock pour snapshot (product_id, zone_id, warehouse_id)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "stock_id", nullable = false)
-    private Stock stock;
-
-    // Dénormalisation du produit pour accès rapide sans JOIN sur stock
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
-
 
     /**
      * Lien direct vers la ligne de stock concernée.
@@ -61,12 +48,35 @@ public class InventoryLine extends BaseEntity {
     private Stock stock;
 
     /**
+     * Dénormalisation du produit pour affichage rapide
+     * sans recharger la ligne de stock.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    /**
      * Zone de stockage — dénormalisée ici pour affichage rapide
      * sans recharger la ligne de stock.
      */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "zone_id")
+    private Zone zone;
 
+    /**
+     * Calcule l'écart entre quantité physique et quantité théorique.
+     * Retourne null si le comptage n'a pas encore été saisi.
      */
+    public Integer getGap() {
         if (actualQty == null) return null;
-
         return actualQty - theoreticalQty;
     }
+
+    /**
+     * Indique si cette ligne a été saisie par le magasinier.
+     * Une ligne est considérée "comptée" dès que actualQty est renseignée.
+     */
+    public boolean isCounted() {
+        return actualQty != null;
+    }
+}

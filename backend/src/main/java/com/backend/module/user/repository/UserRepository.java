@@ -119,4 +119,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
         ORDER BY w.id ASC, u.username ASC
         """)
     List<User> findStorekeepersByWarehouseIds(@Param("warehouseIds") List<Long> warehouseIds);
+
+    /** Comptage pour le dashboard global. */
+    long countByIsActive(Boolean isActive);
 }

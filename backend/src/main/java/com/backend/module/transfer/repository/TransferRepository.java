@@ -88,4 +88,7 @@ public interface TransferRepository extends JpaRepository<Transfer, Long> {
     long countByTargetWarehouseIdAndStatus(Long warehouseId, TransferStatus status);
 
     boolean existsByTransferNumber(String transferNumber);
+
+    /** Compte tous les transferts d'un statut donné (dashboard global). */
+    long countByStatus(TransferStatus status);
 }

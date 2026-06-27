@@ -112,4 +112,45 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
         @Param("warehouseId") Long warehouseId,
         @Param("zoneIds") List<Long> zoneIds
     );
+
+    // ── Agrégations pour le dashboard ─────────────────────────────
+
+    /** Nombre total de lignes de stock pour un entrepôt. */
+    long countByWarehouseId(Long warehouseId);
+
+    /** Nombre de ruptures totales (qty == 0) pour un entrepôt. */
+    @Query("""
+        SELECT COUNT(s) FROM Stock s
+        WHERE s.warehouse.id = :warehouseId
+          AND s.quantityAvailable = 0
+        """)
+    long countStockOutByWarehouse(@Param("warehouseId") Long warehouseId);
+
+    /** Nombre total de lignes sous seuil sur tout le système. */
+    @Query("""
+        SELECT COUNT(s) FROM Stock s
+        WHERE s.minStock IS NOT NULL
+          AND s.quantityAvailable < s.minStock
+        """)
+    long countBelowMinGlobal();
+
+    /** Nombre total de ruptures sur tout le système. */
+    @Query("""
+        SELECT COUNT(s) FROM Stock s
+        WHERE s.quantityAvailable = 0
+        """)
+    long countStockOutGlobal();
+
+    /** Répartition du stock par catégorie pour un entrepôt.
+     *  Retourne : [categoryId, categoryName, stockLineCount, totalQuantity] */
+    @Query("""
+        SELECT p.category.id, p.category.name,
+               COUNT(s), COALESCE(SUM(s.quantityAvailable), 0)
+        FROM Stock s
+        JOIN s.product p
+        WHERE (:warehouseId IS NULL OR s.warehouse.id = :warehouseId)
+        GROUP BY p.category.id, p.category.name
+        ORDER BY COUNT(s) DESC
+        """)
+    List<Object[]> countStockByCategory(@Param("warehouseId") Long warehouseId);
 }

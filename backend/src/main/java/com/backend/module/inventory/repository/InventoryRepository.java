@@ -20,14 +20,12 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
         JOIN FETCH i.warehouse
         JOIN FETCH i.createdBy
         LEFT JOIN FETCH i.lines l
-<<<<<<< HEAD
         LEFT JOIN FETCH l.product p
         LEFT JOIN FETCH p.category
         LEFT JOIN FETCH l.stock
->>>>>>> e23d4fc9a67e8abf52d5575486bdb7f802881c1d
-        LEFT JOIN FETCH l.zone
         WHERE i.id = :id
         """)
+    Optional<Inventory> findByIdWithDetails(@Param("id") Long id);
 
     // Liste paginée pour un entrepôt
     @Query("""
@@ -35,9 +33,19 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
         JOIN FETCH i.warehouse
         JOIN FETCH i.createdBy
         WHERE i.warehouse.id = :warehouseId
-        @Param("warehouseId") Long warehouseId,    
+          AND (:status IS NULL OR i.inventoryStatus = :status)
+        """)
+    Page<Inventory> findByWarehouseWithFilters(
+        @Param("warehouseId") Long warehouseId,
+        @Param("status") InventoryStatus status,
         Pageable pageable
     );
 
-}
+    boolean existsByInventoryNumber(String inventoryNumber);
+
+    // Vérifie qu'il n'y a pas déjà un inventaire IN_PROGRESS sur cet entrepôt
+    boolean existsByWarehouseIdAndInventoryStatus(Long warehouseId, InventoryStatus status);
+
+    /** Comptage pour le dashboard. */
+    long countByWarehouseIdAndInventoryStatus(Long warehouseId, InventoryStatus status);
 }

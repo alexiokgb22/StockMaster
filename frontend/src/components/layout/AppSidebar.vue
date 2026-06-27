@@ -166,6 +166,7 @@ const reportsLinks = computed(() => [
 const traceabilityLinks = computed(() =>
   filterLinks([
     { title: 'Traçabilité', to: { name: 'Traceability' }, permission: 'audit.view' },
+    { title: 'Alertes',     to: { name: 'Alerts' },       permission: 'alert.view' },
   ]),
 )
 </script>

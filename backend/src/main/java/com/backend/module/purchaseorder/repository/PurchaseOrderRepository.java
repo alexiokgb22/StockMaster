@@ -73,4 +73,10 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
     );
 
     boolean existsByOrderNumber(String orderNumber);
+
+    /** Compte les commandes d'un entrepôt par statut (dashboard). */
+    long countByWarehouseIdAndStatus(Long warehouseId, PurchaseOrderStatus status);
+
+    /** Compte toutes les commandes d'un statut donné (dashboard global). */
+    long countByStatus(PurchaseOrderStatus status);
 }

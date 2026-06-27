@@ -42,4 +42,7 @@ public interface WarehouseRepository extends JpaRepository<Warehouse, Long> {
     /** Retourne le nombre de gestionnaires assignés à cet entrepôt. */
     @Query("SELECT COUNT(w) FROM Warehouse w WHERE w.id = :warehouseId AND w.manager IS NOT NULL")
     long countManager(@Param("warehouseId") Long warehouseId);
+
+    /** Comptage pour le dashboard global. */
+    long countByIsActive(Boolean isActive);
 }

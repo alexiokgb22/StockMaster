@@ -162,6 +162,13 @@ const routes = [
         component: () => import('@/pages/traceability/TraceabilityPage.vue'),
         meta: { permission: 'audit.view' },
       },
+      // ── Alertes ───────────────────────────────────────────────
+      {
+        path: 'alerts',
+        name: 'Alerts',
+        component: () => import('@/pages/alerts/AlertsPage.vue'),
+        meta: { permission: 'alert.view' },
+      },
     ],
   },
   {

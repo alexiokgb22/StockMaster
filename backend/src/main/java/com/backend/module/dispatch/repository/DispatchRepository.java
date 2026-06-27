@@ -47,4 +47,7 @@ public interface DispatchRepository extends JpaRepository<Dispatch, Long> {
     long countByWarehouseIdAndStatus(Long warehouseId, DispatchStatus status);
 
     boolean existsByDispatchNumber(String dispatchNumber);
+
+    /** Compte tous les bons d'un statut donné (dashboard global). */
+    long countByStatus(DispatchStatus status);
 }

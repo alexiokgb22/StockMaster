@@ -110,4 +110,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // ── Stock actif sur ce produit (bloque désactivation gestionnaire) ──
     @Query("SELECT COUNT(s) FROM Stock s WHERE s.product.id = :productId AND s.quantityAvailable > 0")
     long countActiveStock(@Param("productId") Long productId);
+
+    /** Comptage pour le dashboard global. */
+    long countByIsActive(Boolean isActive);
 }
