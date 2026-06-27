@@ -9,7 +9,7 @@ import com.backend.module.purchaseorderline.entity.PurchaseOrderLine;
 import com.backend.module.shared.entity.BaseEntity;
 import com.backend.module.stock.entity.Stock;
 import com.backend.module.stockmovement.entity.StockMovement;
-import com.backend.module.transfer.entity.Transfer;
+import com.backend.module.transfer.entity.TransferLine;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -120,7 +120,7 @@ public class Product extends BaseEntity {
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     @JsonIgnore
     @Builder.Default
-    private Set<Transfer> transfers = new HashSet<>();
+    private Set<TransferLine> transferLines = new HashSet<>();
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     @JsonIgnore

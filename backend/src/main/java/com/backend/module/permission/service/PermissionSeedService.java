@@ -133,6 +133,8 @@ public class PermissionSeedService {
         // Ne valide rien, ne configure rien, n'accède pas aux rapports globaux.
         Role storeKeeperRole = findOrCreateRole("Magasinier", "Opérateur terrain chargé des tâches physiques de stockage");
         assignPermissions(storeKeeperRole, filter(all, List.of(
+            // Consultation des zones (nécessaire pour les réceptions, sorties, transferts)
+            "zone.read",
             // Consultation du stock et historique
             "stock.read", "stock.view_history",
             // Réceptions (création uniquement, validation réservée au gestionnaire)
