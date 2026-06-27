@@ -117,7 +117,7 @@ const inventoryLinks = computed(() => {
     ...(isAdmin ? [{ title: 'Catégories', to: { name: 'Categories' }, permission: 'category.read' }] : []),
     // Produits : admin → page catalogue globale / gestionnaire → onglet entrepôt
     ...(isAdmin ? [{ title: 'Produits', to: { name: 'Products' }, permission: 'product.read' }] : []),
-    { title: 'Stocks',      to: { name: 'NotFound' }, comingSoon: true },
+    { title: 'Stocks',      to: { name: 'Stocks' }, permission: 'stock.read' },
     { title: 'Inventaires', to: { name: 'NotFound' }, comingSoon: true },
   ])
 })

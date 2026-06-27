@@ -17,6 +17,10 @@ public class DispatchResponse {
     private String note;
     private String rejectionReason;
     private LocalDateTime validatedAt;
+    private String clientFirstName;
+    private String clientLastName;
+    private String clientPhone;
+    private String deliveryAddress;
 
     // Entrepôt
     private Long warehouseId;

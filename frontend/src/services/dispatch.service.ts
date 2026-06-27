@@ -13,6 +13,7 @@ interface PaginatedResponse<T> {
   number: number
 }
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 const base = (warehouseId: number) => `/api/warehouses/${warehouseId}/dispatches`
 
 export const dispatchService = {
@@ -40,4 +41,7 @@ export const dispatchService = {
     data?: RejectDispatchRequest,
   ): Promise<DispatchResponse> =>
     http.patch(`${base(warehouseId)}/${dispatchId}/reject`, data ?? {}).then((r) => r.data),
+
+  getBordereauUrl: (warehouseId: number, dispatchId: number): string =>
+    `${apiBaseUrl}${base(warehouseId)}/${dispatchId}/bordereau`,
 }

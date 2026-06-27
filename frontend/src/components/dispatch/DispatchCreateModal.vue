@@ -77,6 +77,28 @@
         </div>
       </div>
 
+      <!-- Informations client -->
+      <div class="grid grid-cols-2 gap-3">
+        <FormField label="Prénom du client" required>
+          <BaseInput v-model="clientFirstName" placeholder="Prénom" required />
+        </FormField>
+        <FormField label="Nom du client" required>
+          <BaseInput v-model="clientLastName" placeholder="Nom" required />
+        </FormField>
+        <FormField label="Téléphone" required>
+          <BaseInput v-model="clientPhone" placeholder="06 00 00 00 00" required />
+        </FormField>
+        <FormField label="Adresse de livraison" required class="col-span-2">
+          <textarea
+            v-model="deliveryAddress"
+            rows="2"
+            placeholder="Adresse complète"
+            class="w-full rounded-2xl border border-border bg-surface px-4 py-2 text-sm text-text-main outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 resize-none"
+            required
+          />
+        </FormField>
+      </div>
+
       <!-- Note globale -->
       <FormField label="Note générale (optionnel)">
         <textarea
@@ -116,6 +138,10 @@ const emit = defineEmits<{ close: []; saved: [] }>()
 const saving = ref(false)
 const error = ref('')
 const globalNote = ref('')
+const clientFirstName = ref('')
+const clientLastName = ref('')
+const clientPhone = ref('')
+const deliveryAddress = ref('')
 const availableStocks = ref<StockResponse[]>([])
 
 interface LineForm {
@@ -170,11 +196,19 @@ async function handleSubmit() {
     error.value = 'La quantité doit être au moins 1'
     return
   }
+  if (!clientFirstName.value.trim() || !clientLastName.value.trim() || !clientPhone.value.trim() || !deliveryAddress.value.trim()) {
+    error.value = 'Veuillez renseigner les informations du client pour la livraison'
+    return
+  }
 
   saving.value = true
   try {
     const payload: CreateDispatchRequest = {
       note: globalNote.value || undefined,
+      clientFirstName: clientFirstName.value.trim(),
+      clientLastName: clientLastName.value.trim(),
+      clientPhone: clientPhone.value.trim(),
+      deliveryAddress: deliveryAddress.value.trim(),
       lines: lines.value.map((l) => ({
         productId: l.productId,
         zoneId: l.zoneId,

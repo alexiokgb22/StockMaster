@@ -98,6 +98,10 @@ public class DispatchService {
                 .dispatchNumber(generateDispatchNumber())
                 .status(DispatchStatus.PENDING)
                 .note(req.getNote())
+                .clientFirstName(req.getClientFirstName())
+                .clientLastName(req.getClientLastName())
+                .clientPhone(req.getClientPhone())
+                .deliveryAddress(req.getDeliveryAddress())
                 .warehouse(warehouse)
                 .createdBy(creator)
                 .build();
@@ -232,6 +236,10 @@ public class DispatchService {
                 .orElseThrow(() -> new ResourceNotFoundException("Bon de sortie introuvable : " + id));
     }
 
+    public Dispatch getDispatchForBordereau(Long dispatchId, Long warehouseId) {
+        return getDispatchInWarehouse(dispatchId, warehouseId);
+    }
+
     private Dispatch getDispatchInWarehouse(Long dispatchId, Long warehouseId) {
         Dispatch dispatch = getDispatch(dispatchId);
         if (!dispatch.getWarehouse().getId().equals(warehouseId)) {
@@ -296,6 +304,10 @@ public class DispatchService {
                 .note(d.getNote())
                 .rejectionReason(d.getRejectionReason())
                 .validatedAt(d.getValidatedAt())
+                .clientFirstName(d.getClientFirstName())
+                .clientLastName(d.getClientLastName())
+                .clientPhone(d.getClientPhone())
+                .deliveryAddress(d.getDeliveryAddress())
                 .warehouseId(d.getWarehouse().getId())
                 .warehouseName(d.getWarehouse().getName())
                 .createdByUsername(d.getCreatedBy().getUsername())

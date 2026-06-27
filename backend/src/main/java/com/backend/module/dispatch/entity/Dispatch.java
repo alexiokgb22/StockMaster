@@ -37,6 +37,18 @@ public class Dispatch extends BaseEntity {
     @Column(name = "note", columnDefinition = "TEXT")
     private String note;
 
+    @Column(name = "client_first_name")
+    private String clientFirstName;
+
+    @Column(name = "client_last_name")
+    private String clientLastName;
+
+    @Column(name = "client_phone")
+    private String clientPhone;
+
+    @Column(name = "delivery_address", columnDefinition = "TEXT")
+    private String deliveryAddress;
+
     // Raison du rejet (optionnel)
     @Column(name = "rejection_reason", columnDefinition = "TEXT")
     private String rejectionReason;

@@ -20,6 +20,10 @@ export interface DispatchResponse {
   note: string | null
   rejectionReason: string | null
   validatedAt: string | null
+  clientFirstName: string
+  clientLastName: string
+  clientPhone: string
+  deliveryAddress: string
   warehouseId: number
   warehouseName: string
   createdByUsername: string
@@ -38,6 +42,10 @@ export interface DispatchLineRequest {
 
 export interface CreateDispatchRequest {
   note?: string
+  clientFirstName: string
+  clientLastName: string
+  clientPhone: string
+  deliveryAddress: string
   lines: DispatchLineRequest[]
 }
 

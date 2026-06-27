@@ -95,6 +95,12 @@ const routes = [
         component: () => import('@/pages/warehouses/WarehouseDetailPage.vue'),
         meta: { permission: 'warehouse.read' },
       },
+      {
+        path: 'stocks',
+        name: 'Stocks',
+        component: () => import('@/pages/stocks/StocksPage.vue'),
+        meta: { permission: 'stock.read' },
+      },
       // ── Commandes fournisseurs ────────────────────────────────
       {
         // Vue Gestionnaire : commandes de son entrepôt

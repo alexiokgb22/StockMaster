@@ -83,6 +83,14 @@
             >
               Valider / Rejeter
             </BaseButton>
+            <BaseButton
+              v-if="can('dispatch.print_bordereau')"
+              size="sm"
+              variant="secondary"
+              @click="printBordereau(d.id)"
+            >
+              Imprimer bordereau
+            </BaseButton>
           </div>
         </div>
       </div>
@@ -121,6 +129,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { usePermissions } from '@/composables/usePermissions'
 import { dispatchService } from '@/services/dispatch.service'
 import type { DispatchResponse, DispatchStatus } from '@/types/dispatch.types'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -132,6 +141,7 @@ import DispatchCreateModal from '@/components/dispatch/DispatchCreateModal.vue'
 import DispatchValidateModal from '@/components/dispatch/DispatchValidateModal.vue'
 
 const authStore = useAuthStore()
+const { can } = usePermissions()
 const warehouseId = computed(() => authStore.currentUser?.warehouseId!)
 const isManager = computed(() => authStore.currentUser?.role === "Gestionnaire d'entrepôt")
 const isStorekeeper = computed(() => authStore.currentUser?.role === 'Magasinier')
@@ -184,6 +194,43 @@ async function fetchDispatches() {
 async function fetchPendingCount() {
   if (isManager.value) {
     pendingCount.value = await dispatchService.countPending(warehouseId.value)
+  }
+}
+
+async function printBordereau(dispatchId: number) {
+  const url = dispatchService.getBordereauUrl(warehouseId.value, dispatchId)
+  const dispatch = dispatches.value.find((item) => item.id === dispatchId)
+  const fileName = dispatch
+    ? `${dispatch.dispatchNumber.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.html`
+    : `bordereau-${dispatchId}.html`
+
+  try {
+    const response = await fetch(url, {
+      credentials: 'include',
+      headers: { Accept: 'text/html' },
+    })
+    if (!response.ok) {
+      throw new Error('Impossible de générer le bordereau')
+    }
+
+    const html = await response.text()
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const blobUrl = URL.createObjectURL(blob)
+
+    window.open(blobUrl, '_blank', 'noopener,noreferrer')
+
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = fileName
+    link.style.display = 'none'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+  } catch (error) {
+    console.error('Erreur lors du téléchargement du bordereau', error)
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 }
 
