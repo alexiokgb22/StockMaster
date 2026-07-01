@@ -1,13 +1,13 @@
 <template>
   <div class="space-y-6">
-    <PageHeader title="Réceptions" subtitle="Bons de réception de votre entrepôt" />
+    <PageHeader title="Réceptions" subtitle="Historique des réceptions de l'entrepôt" />
 
     <!-- Onglets -->
     <div class="flex gap-2 border-b border-border">
       <button
         v-for="tab in tabs"
         :key="tab.key"
-        @click="activeTab = tab.key"
+        @click="activeTab = tab.key; page = 0; fetchReceptions()"
         :class="[
           'px-4 py-2 text-sm font-medium transition border-b-2 -mb-px',
           activeTab === tab.key
@@ -16,17 +16,11 @@
         ]"
       >
         {{ tab.label }}
-        <span
-          v-if="tab.key === 'pending' && pendingCount > 0"
-          class="ml-1 rounded-full bg-red-500 px-1.5 py-0.5 text-xs text-white"
-        >
-          {{ pendingCount }}
-        </span>
       </button>
     </div>
 
     <!-- Onglet : À réceptionner (Magasinier) -->
-    <template v-if="activeTab === 'deliverable' && isStorekeeper">
+    <template v-if="activeTab === 'deliverable'">
       <BaseCard>
         <div v-if="loadingDeliverable" class="py-8 text-center text-sm text-text-secondary">
           Chargement…
@@ -68,7 +62,7 @@
 
             <div class="mt-3">
               <BaseButton size="sm" @click="openCreateModal(order)">
-                Créer un bon de réception
+                Réceptionner
               </BaseButton>
             </div>
           </div>
@@ -76,19 +70,17 @@
       </BaseCard>
     </template>
 
-    <!-- Onglet : Mes bons / Tous les bons -->
-    <template v-else-if="activeTab === 'list' || activeTab === 'pending'">
+    <!-- Onglet : Historique -->
+    <template v-else>
       <!-- Filtre statut -->
       <BaseCard>
         <select
           v-model="statusFilter"
-          @change="fetchReceptions"
+          @change="page = 0; fetchReceptions()"
           class="rounded-3xl border border-border bg-surface px-4 py-2 text-sm text-text-main outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
         >
           <option value="">Tous les statuts</option>
-          <option value="PENDING">En attente</option>
           <option value="VALIDATED">Validé</option>
-          <option value="REJECTED">Rejeté</option>
         </select>
       </BaseCard>
 
@@ -99,7 +91,7 @@
         <EmptyState
           v-else-if="receptions.length === 0"
           title="Aucun bon de réception"
-          description="Les bons de réception apparaîtront ici."
+          description="L'historique des réceptions apparaîtra ici."
         />
         <div v-else class="space-y-3">
           <div
@@ -112,7 +104,7 @@
                 <code class="rounded bg-gray-100 px-2 py-0.5 text-xs font-mono">
                   {{ r.receptionNumber }}
                 </code>
-                <StatusBadge :label="statusLabel(r.status)" :variant="statusVariant(r.status)" />
+                <StatusBadge label="Validé" variant="success" />
                 <span v-if="r.gapCount > 0" class="text-xs text-amber-600">
                   ⚠ {{ r.gapCount }} écart(s)
                 </span>
@@ -124,22 +116,15 @@
 
             <div class="mt-2 text-sm text-text-secondary">
               <code class="rounded bg-gray-50 px-1 text-xs">{{ r.purchaseOrderNumber }}</code>
-              <span v-if="r.supplierName" class="ml-2 text-primary font-medium">
+              <span v-if="r.supplierName" class="ml-2 font-medium text-primary">
                 {{ r.supplierName }}
               </span>
               · {{ r.lines.length }} produit(s) · Par {{ r.createdByUsername }}
             </div>
 
-            <div class="mt-3 flex gap-2">
+            <div class="mt-3">
               <BaseButton size="sm" variant="secondary" @click="selectedReception = r">
                 Voir le détail
-              </BaseButton>
-              <BaseButton
-                v-if="r.status === 'PENDING' && isManager"
-                size="sm"
-                @click="receptionToValidate = r"
-              >
-                Valider / Rejeter
               </BaseButton>
             </div>
           </div>
@@ -174,20 +159,14 @@
       :reception="selectedReception"
       @close="selectedReception = null"
     />
-    <ReceptionValidateModal
-      v-if="receptionToValidate"
-      :reception="receptionToValidate"
-      @close="receptionToValidate = null"
-      @saved="onSaved"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { receptionService } from '@/services/reception.service'
 import { useToastStore } from '@/stores/toast'
+import { receptionService } from '@/services/reception.service'
 import type { ReceptionResponse, ReceptionStatus } from '@/types/reception.types'
 import type { PurchaseOrderResponse } from '@/types/purchaseorder.types'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -197,65 +176,51 @@ import StatusBadge from '@/components/ui/StatusBadge.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import ReceptionCreateModal from '@/components/reception/ReceptionCreateModal.vue'
 import ReceptionDetailModal from '@/components/reception/ReceptionDetailModal.vue'
-import ReceptionValidateModal from '@/components/reception/ReceptionValidateModal.vue'
 
 const authStore = useAuthStore()
 const toast = useToastStore()
 
-const warehouseId = computed(() => authStore.currentUser?.warehouseId!)
-const isManager = computed(() => authStore.currentUser?.role === "Gestionnaire d'entrepôt")
+const warehouseId   = computed(() => authStore.currentUser?.warehouseId!)
 const isStorekeeper = computed(() => authStore.currentUser?.role === 'Magasinier')
 
-// Onglets selon le rôle
+// Magasinier : onglet "À réceptionner" en premier
+// Gestionnaire / autres : historique directement
 const tabs = computed(() => {
-  const base = [{ key: 'list', label: 'Tous les bons' }]
-  if (isManager.value) {
-    return [{ key: 'pending', label: 'En attente de validation' }, ...base]
-  }
   if (isStorekeeper.value) {
-    return [{ key: 'deliverable', label: 'À réceptionner' }, ...base]
+    return [
+      { key: 'deliverable', label: 'À réceptionner' },
+      { key: 'list',        label: 'Historique' },
+    ]
   }
-  return base
+  return [{ key: 'list', label: 'Historique' }]
 })
 
-const activeTab = ref(isManager.value ? 'pending' : isStorekeeper.value ? 'deliverable' : 'list')
+const activeTab = ref(isStorekeeper.value ? 'deliverable' : 'list')
 
 // ── État ──────────────────────────────────────────────────────
-const receptions = ref<ReceptionResponse[]>([])
+const receptions        = ref<ReceptionResponse[]>([])
 const deliverableOrders = ref<PurchaseOrderResponse[]>([])
-const pendingCount = ref(0)
-const loadingReceptions = ref(false)
+const loadingReceptions  = ref(false)
 const loadingDeliverable = ref(false)
-const page = ref(0)
-const totalPages = ref(1)
+const page          = ref(0)
+const totalPages    = ref(1)
 const totalElements = ref(0)
-const statusFilter = ref<ReceptionStatus | ''>('')
+const statusFilter  = ref<ReceptionStatus | ''>('')
 
 const selectedReception = ref<ReceptionResponse | null>(null)
-const receptionToValidate = ref<ReceptionResponse | null>(null)
-const orderForCreation = ref<PurchaseOrderResponse | null>(null)
-
-// ── Helpers ───────────────────────────────────────────────────
-const statusLabel = (s: ReceptionStatus) =>
-  ({ PENDING: 'En attente', VALIDATED: 'Validé', REJECTED: 'Rejeté' }[s] ?? s)
-
-const statusVariant = (s: ReceptionStatus) =>
-  ({ PENDING: 'warning', VALIDATED: 'success', REJECTED: 'danger' }[s] ?? 'secondary') as any
+const orderForCreation  = ref<PurchaseOrderResponse | null>(null)
 
 // ── Chargements ───────────────────────────────────────────────
 async function fetchReceptions() {
   loadingReceptions.value = true
   try {
-    const effectiveStatus = activeTab.value === 'pending'
-      ? 'PENDING'
-      : (statusFilter.value || undefined)
     const res = await receptionService.list(warehouseId.value, {
-      status: effectiveStatus as ReceptionStatus | undefined,
-      page: page.value,
-      size: 20,
+      status: (statusFilter.value || undefined) as ReceptionStatus | undefined,
+      page:   page.value,
+      size:   20,
     })
-    receptions.value = res.content
-    totalPages.value = res.totalPages
+    receptions.value    = res.content
+    totalPages.value    = res.totalPages
     totalElements.value = res.totalElements
   } finally {
     loadingReceptions.value = false
@@ -272,28 +237,19 @@ async function fetchDeliverable() {
   }
 }
 
-async function fetchPendingCount() {
-  if (isManager.value) {
-    pendingCount.value = await receptionService.countPending(warehouseId.value)
-  }
-}
-
 function openCreateModal(order: PurchaseOrderResponse) {
   orderForCreation.value = order
 }
 
 function onSaved() {
   orderForCreation.value = null
-  receptionToValidate.value = null
-  toast.success('Opération réussie')
+  toast.success('Réception enregistrée')
   fetchReceptions()
-  fetchPendingCount()
   if (isStorekeeper.value) fetchDeliverable()
 }
 
 onMounted(() => {
   fetchReceptions()
-  fetchPendingCount()
   if (isStorekeeper.value) fetchDeliverable()
 })
 </script>

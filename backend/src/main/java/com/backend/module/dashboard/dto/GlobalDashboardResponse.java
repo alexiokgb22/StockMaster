@@ -35,7 +35,5 @@ public class GlobalDashboardResponse {
 
     // ── Flux globaux en attente ────────────────────────────────────
     private long pendingPurchaseOrders;
-    private long pendingReceptions;
-    private long pendingDispatches;
     private long pendingTransfers;
 }

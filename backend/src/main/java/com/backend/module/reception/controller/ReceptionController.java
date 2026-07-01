@@ -3,7 +3,6 @@ package com.backend.module.reception.controller;
 import com.backend.module.purchaseorder.dto.PurchaseOrderResponse;
 import com.backend.module.reception.dto.CreateReceptionRequest;
 import com.backend.module.reception.dto.ReceptionResponse;
-import com.backend.module.reception.dto.RejectReceptionRequest;
 import com.backend.module.reception.service.ReceptionService;
 import com.backend.module.shared.enums.ReceptionStatus;
 import jakarta.validation.Valid;
@@ -23,10 +22,9 @@ public class ReceptionController {
 
     private final ReceptionService receptionService;
 
-    // ── GET /api/warehouses/{wId}/receptions ─────────────────────
-    // Magasinier : ses bons / Gestionnaire : tous les bons de l'entrepôt
+    // ── GET — liste des bons (magasinier + gestionnaire en lecture)
     @GetMapping
-    @PreAuthorize("hasAuthority('receipt.create') or hasAuthority('receipt.validate')")
+    @PreAuthorize("hasAuthority('receipt.create') or hasAuthority('warehouse.read')")
     public ResponseEntity<Page<ReceptionResponse>> getAll(
             @PathVariable Long warehouseId,
             @RequestParam(required = false) ReceptionStatus status,
@@ -37,8 +35,7 @@ public class ReceptionController {
         return ResponseEntity.ok(receptionService.findByWarehouse(warehouseId, status, pageable));
     }
 
-    // ── GET /api/warehouses/{wId}/receptions/deliverable ─────────
-    // Commandes DELIVERED disponibles pour réception (Magasinier)
+    // ── GET — commandes DELIVERED disponibles pour réception
     @GetMapping("/deliverable")
     @PreAuthorize("hasAuthority('receipt.create')")
     public ResponseEntity<Page<PurchaseOrderResponse>> getDeliverable(
@@ -50,17 +47,9 @@ public class ReceptionController {
         return ResponseEntity.ok(receptionService.findDeliverable(warehouseId, pageable));
     }
 
-    // ── GET /api/warehouses/{wId}/receptions/pending-count ───────
-    // Compteur PENDING pour le badge gestionnaire
-    @GetMapping("/pending-count")
-    @PreAuthorize("hasAuthority('receipt.validate')")
-    public ResponseEntity<Long> getPendingCount(@PathVariable Long warehouseId) {
-        return ResponseEntity.ok(receptionService.countPending(warehouseId));
-    }
-
-    // ── GET /api/warehouses/{wId}/receptions/{rId} ───────────────
+    // ── GET — détail d'un bon
     @GetMapping("/{receptionId}")
-    @PreAuthorize("hasAuthority('receipt.create') or hasAuthority('receipt.validate')")
+    @PreAuthorize("hasAuthority('receipt.create') or hasAuthority('warehouse.read')")
     public ResponseEntity<ReceptionResponse> getById(
             @PathVariable Long warehouseId,
             @PathVariable Long receptionId
@@ -68,8 +57,7 @@ public class ReceptionController {
         return ResponseEntity.ok(receptionService.findById(warehouseId, receptionId));
     }
 
-    // ── POST /api/warehouses/{wId}/receptions ────────────────────
-    // Magasinier crée un bon de réception
+    // ── POST — magasinier crée et valide le bon en une seule opération
     @PostMapping
     @PreAuthorize("hasAuthority('receipt.create')")
     public ResponseEntity<ReceptionResponse> create(
@@ -78,28 +66,5 @@ public class ReceptionController {
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(receptionService.create(warehouseId, req));
-    }
-
-    // ── PATCH /api/warehouses/{wId}/receptions/{rId}/validate ────
-    // Gestionnaire valide → stock mis à jour, commande clôturée
-    @PatchMapping("/{receptionId}/validate")
-    @PreAuthorize("hasAuthority('receipt.validate')")
-    public ResponseEntity<ReceptionResponse> validate(
-            @PathVariable Long warehouseId,
-            @PathVariable Long receptionId
-    ) {
-        return ResponseEntity.ok(receptionService.validate(warehouseId, receptionId));
-    }
-
-    // ── PATCH /api/warehouses/{wId}/receptions/{rId}/reject ──────
-    // Gestionnaire rejette → commande reste DELIVERED
-    @PatchMapping("/{receptionId}/reject")
-    @PreAuthorize("hasAuthority('receipt.validate')")
-    public ResponseEntity<ReceptionResponse> reject(
-            @PathVariable Long warehouseId,
-            @PathVariable Long receptionId,
-            @RequestBody(required = false) RejectReceptionRequest req
-    ) {
-        return ResponseEntity.ok(receptionService.reject(warehouseId, receptionId, req));
     }
 }

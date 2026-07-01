@@ -56,6 +56,18 @@ public interface ReceptionRepository extends JpaRepository<Reception, Long> {
 
     boolean existsByReceptionNumber(String receptionNumber);
 
-    /** Compte les bons d'un statut sur tout le système (dashboard global). */
+    /** Comptage pour le dashboard global. */
     long countByStatus(ReceptionStatus status);
+
+    /** Comptage pour les rapports d'activité. */
+    int countByCreatedByIdAndWarehouseIdAndCreatedAtBetween(
+        Long createdById, Long warehouseId,
+        java.time.LocalDateTime from, java.time.LocalDateTime to
+    );
+
+    /** Liste pour le détail d'un rapport d'activité. */
+    java.util.List<Reception> findByCreatedByIdAndWarehouseIdAndCreatedAtBetween(
+        Long createdById, Long warehouseId,
+        java.time.LocalDateTime from, java.time.LocalDateTime to
+    );
 }

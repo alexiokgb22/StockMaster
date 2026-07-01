@@ -53,6 +53,7 @@ public class TransferService {
     private final ZoneRepository zoneRepository;
     private final WarehouseRepository warehouseRepository;
     private final UserRepository userRepository;
+    private final com.backend.module.stock.service.CapacityService capacityService;
 
     // ─────────────────────────────────────────────────────────────
     // LECTURE — transferts sortants d'un entrepôt (gestionnaire source)
@@ -233,7 +234,12 @@ public class TransferService {
         transfer.setValidatedAt(LocalDateTime.now());
         transfer.setValidatedBy(validator);
 
-        return toResponse(transferRepository.save(transfer));
+        TransferResponse response = toResponse(transferRepository.save(transfer));
+
+        // Source : quantityAvailable décrémentée → recalcul
+        capacityService.recalculate(transfer.getSourceWarehouse());
+
+        return response;
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -334,7 +340,13 @@ public class TransferService {
         transfer.setReceivedAt(LocalDateTime.now());
         transfer.setReceivedBy(receiver);
 
-        return toResponse(transferRepository.save(transfer));
+        TransferResponse response = toResponse(transferRepository.save(transfer));
+
+        // Source : quantityInTransit décrémentée / Cible : quantityAvailable incrémentée
+        capacityService.recalculate(transfer.getSourceWarehouse());
+        capacityService.recalculate(transfer.getTargetWarehouse());
+
+        return response;
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -390,7 +402,14 @@ public class TransferService {
         transfer.setStatus(TransferStatus.CANCELLED);
         transfer.setCancellationReason(req != null ? req.getReason() : null);
 
-        return toResponse(transferRepository.save(transfer));
+        TransferResponse response = toResponse(transferRepository.save(transfer));
+
+        // Si rollback du stock source → recalcul
+        if (transfer.getStatus() == TransferStatus.VALIDATED) {
+            capacityService.recalculate(transfer.getSourceWarehouse());
+        }
+
+        return response;
     }
 
     // ─────────────────────────────────────────────────────────────

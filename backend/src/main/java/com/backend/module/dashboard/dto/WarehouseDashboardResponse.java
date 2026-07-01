@@ -42,12 +42,6 @@ public class WarehouseDashboardResponse {
     /** Commandes fournisseurs en état VALIDATED (livrables à réceptionner). */
     private long pendingPurchaseOrders;
 
-    /** Bons de réception en attente de validation. */
-    private long pendingReceptions;
-
-    /** Bons de sortie en attente de validation. */
-    private long pendingDispatches;
-
     /** Transferts entrants en transit (VALIDATED, pas encore reçus). */
     private long incomingTransfers;
 

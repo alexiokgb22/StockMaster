@@ -3,10 +3,8 @@ package com.backend.module.dashboard.service;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.module.alert.repository.AlertRepository;
 import com.backend.module.dashboard.dto.*;
-import com.backend.module.dispatch.repository.DispatchRepository;
 import com.backend.module.product.repository.ProductRepository;
 import com.backend.module.purchaseorder.repository.PurchaseOrderRepository;
-import com.backend.module.reception.repository.ReceptionRepository;
 import com.backend.module.shared.enums.*;
 import com.backend.module.stock.repository.StockRepository;
 import com.backend.module.stockmovement.repository.StockMovementRepository;
@@ -38,8 +36,6 @@ public class DashboardService {
     private final StockRepository stockRepository;
     private final StockMovementRepository movementRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
-    private final ReceptionRepository receptionRepository;
-    private final DispatchRepository dispatchRepository;
     private final TransferRepository transferRepository;
     private final AlertRepository alertRepository;
 
@@ -67,8 +63,6 @@ public class DashboardService {
 
         // Flux en attente
         long pendingPO      = purchaseOrderRepository.countByStatus(PurchaseOrderStatus.VALIDATED);
-        long pendingRec     = receptionRepository.countByStatus(ReceptionStatus.PENDING);
-        long pendingDisp    = dispatchRepository.countByStatus(DispatchStatus.PENDING);
         long pendingTrans   = transferRepository.countByStatus(TransferStatus.VALIDATED);
 
         return GlobalDashboardResponse.builder()
@@ -82,8 +76,6 @@ public class DashboardService {
                 .totalUnreadAlerts(unreadAlerts)
                 .totalCriticalAlerts(criticalAlerts)
                 .pendingPurchaseOrders(pendingPO)
-                .pendingReceptions(pendingRec)
-                .pendingDispatches(pendingDisp)
                 .pendingTransfers(pendingTrans)
                 .build();
     }
@@ -108,9 +100,7 @@ public class DashboardService {
                 : null;
 
         // Flux en attente
-        long pendingPO    = purchaseOrderRepository.countByWarehouseIdAndStatus(warehouseId, PurchaseOrderStatus.VALIDATED);
-        long pendingRec   = receptionRepository.countByWarehouseIdAndStatus(warehouseId, ReceptionStatus.PENDING);
-        long pendingDisp  = dispatchRepository.countByWarehouseIdAndStatus(warehouseId, DispatchStatus.PENDING);
+        long pendingPO     = purchaseOrderRepository.countByWarehouseIdAndStatus(warehouseId, PurchaseOrderStatus.VALIDATED);
         long incomingTrans = transferRepository.countByTargetWarehouseIdAndStatus(warehouseId, TransferStatus.VALIDATED);
 
         // Alertes
@@ -128,8 +118,6 @@ public class DashboardService {
                 .usedCapacity(usedCap)
                 .capacityPercent(capPct)
                 .pendingPurchaseOrders(pendingPO)
-                .pendingReceptions(pendingRec)
-                .pendingDispatches(pendingDisp)
                 .incomingTransfers(incomingTrans)
                 .activeAlerts(activeAlerts)
                 .criticalAlerts(criticalAlerts)

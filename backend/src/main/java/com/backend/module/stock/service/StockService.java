@@ -39,6 +39,7 @@ public class StockService {
     private final ZoneRepository zoneRepository;
     private final WarehouseRepository warehouseRepository;
     private final UserRepository userRepository;
+    private final CapacityService capacityService;
 
     // ─────────────────────────────────────────────────────────────
     // LECTURE — stocks d'un entrepôt
@@ -130,7 +131,7 @@ public class StockService {
         }
 
         // Règle 5 : recalcul usedCapacity
-        recalculateWarehouseCapacity(warehouse);
+        capacityService.recalculate(warehouse);
 
         return toResponse(saved);
     }
@@ -170,7 +171,7 @@ public class StockService {
         Stock saved = stockRepository.save(stock);
 
         // Recalcul capacité si volume renseigné
-        recalculateWarehouseCapacity(stock.getWarehouse());
+        capacityService.recalculate(stock.getWarehouse());
 
         return toResponse(saved);
     }
@@ -178,17 +179,6 @@ public class StockService {
     // ─────────────────────────────────────────────────────────────
     // HELPERS PRIVÉS
     // ─────────────────────────────────────────────────────────────
-
-    /**
-     * Recalcule warehouse.usedCapacity = somme(quantityAvailable * product.volume)
-     * pour tous les stocks de l'entrepôt dont le produit a un volume renseigné.
-     * Si aucun produit n'a de volume, usedCapacity reste à 0.
-     */
-    private void recalculateWarehouseCapacity(Warehouse warehouse) {
-        double usedVolume = stockRepository.sumVolumeByWarehouse(warehouse.getId());
-        warehouse.setUsedCapacity(usedVolume);
-        warehouseRepository.save(warehouse);
-    }
 
     private Warehouse getWarehouse(Long id) {
         return warehouseRepository.findById(id)

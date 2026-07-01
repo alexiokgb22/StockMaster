@@ -2,7 +2,6 @@ package com.backend.module.dispatch.controller;
 
 import com.backend.module.dispatch.dto.CreateDispatchRequest;
 import com.backend.module.dispatch.dto.DispatchResponse;
-import com.backend.module.dispatch.dto.RejectDispatchRequest;
 import com.backend.module.dispatch.entity.Dispatch;
 import com.backend.module.dispatch.service.DispatchBordereauService;
 import com.backend.module.dispatch.service.DispatchService;
@@ -26,10 +25,9 @@ public class DispatchController {
     private final DispatchService dispatchService;
     private final DispatchBordereauService dispatchBordereauService;
 
-    // ── GET /api/warehouses/{wId}/dispatches ─────────────────────
-    // Magasinier : ses bons / Gestionnaire : tous les bons de l'entrepôt
+    // ── GET — liste des bons (magasinier + gestionnaire en lecture)
     @GetMapping
-    @PreAuthorize("hasAuthority('dispatch.create') or hasAuthority('dispatch.validate')")
+    @PreAuthorize("hasAuthority('dispatch.create') or hasAuthority('warehouse.read')")
     public ResponseEntity<Page<DispatchResponse>> getAll(
             @PathVariable Long warehouseId,
             @RequestParam(required = false) DispatchStatus status,
@@ -40,9 +38,9 @@ public class DispatchController {
         return ResponseEntity.ok(dispatchService.findByWarehouse(warehouseId, status, pageable));
     }
 
-    // ── GET /api/warehouses/{wId}/dispatches/{dId} ───────────────
+    // ── GET — détail d'un bon
     @GetMapping("/{dispatchId}")
-    @PreAuthorize("hasAuthority('dispatch.create') or hasAuthority('dispatch.validate')")
+    @PreAuthorize("hasAuthority('dispatch.create') or hasAuthority('warehouse.read')")
     public ResponseEntity<DispatchResponse> getById(
             @PathVariable Long warehouseId,
             @PathVariable Long dispatchId
@@ -50,16 +48,7 @@ public class DispatchController {
         return ResponseEntity.ok(dispatchService.findById(warehouseId, dispatchId));
     }
 
-    // ── GET /api/warehouses/{wId}/dispatches/pending-count ───────
-    // Compteur PENDING pour le badge gestionnaire
-    @GetMapping("/pending-count")
-    @PreAuthorize("hasAuthority('dispatch.validate')")
-    public ResponseEntity<Long> getPendingCount(@PathVariable Long warehouseId) {
-        return ResponseEntity.ok(dispatchService.countPending(warehouseId));
-    }
-
-    // ── POST /api/warehouses/{wId}/dispatches ────────────────────
-    // Magasinier crée un bon de sortie (PENDING)
+    // ── POST — magasinier crée et valide le bon directement
     @PostMapping
     @PreAuthorize("hasAuthority('dispatch.create')")
     public ResponseEntity<DispatchResponse> create(
@@ -70,29 +59,7 @@ public class DispatchController {
                 .body(dispatchService.create(warehouseId, req));
     }
 
-    // ── PATCH /api/warehouses/{wId}/dispatches/{dId}/validate ────
-    // Gestionnaire valide → stock décrémenté, StockMovement EXIT généré
-    @PatchMapping("/{dispatchId}/validate")
-    @PreAuthorize("hasAuthority('dispatch.validate')")
-    public ResponseEntity<DispatchResponse> validate(
-            @PathVariable Long warehouseId,
-            @PathVariable Long dispatchId
-    ) {
-        return ResponseEntity.ok(dispatchService.validate(warehouseId, dispatchId));
-    }
-
-    // ── PATCH /api/warehouses/{wId}/dispatches/{dId}/reject ──────
-    // Gestionnaire rejette → stock inchangé
-    @PatchMapping("/{dispatchId}/reject")
-    @PreAuthorize("hasAuthority('dispatch.validate')")
-    public ResponseEntity<DispatchResponse> reject(
-            @PathVariable Long warehouseId,
-            @PathVariable Long dispatchId,
-            @RequestBody(required = false) RejectDispatchRequest req
-    ) {
-        return ResponseEntity.ok(dispatchService.reject(warehouseId, dispatchId, req));
-    }
-
+    // ── GET — bordereau de sortie
     @GetMapping("/{dispatchId}/bordereau")
     @PreAuthorize("hasAuthority('dispatch.print_bordereau')")
     public ResponseEntity<String> getBordereau(

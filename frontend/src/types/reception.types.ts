@@ -1,4 +1,6 @@
-export type ReceptionStatus = 'PENDING' | 'VALIDATED' | 'REJECTED'
+// Seul statut possible désormais : VALIDATED
+// Le magasinier crée et valide en une seule opération
+export type ReceptionStatus = 'VALIDATED'
 
 export interface ReceptionLineResponse {
   id: number
@@ -20,7 +22,6 @@ export interface ReceptionResponse {
   receptionNumber: string
   status: ReceptionStatus
   note: string | null
-  rejectionReason: string | null
   validatedAt: string | null
   purchaseOrderId: number
   purchaseOrderNumber: string
@@ -47,8 +48,4 @@ export interface CreateReceptionRequest {
   purchaseOrderId: number
   note?: string
   lines: ReceptionLineRequest[]
-}
-
-export interface RejectReceptionRequest {
-  reason?: string
 }

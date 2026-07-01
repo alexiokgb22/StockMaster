@@ -48,6 +48,18 @@ public interface DispatchRepository extends JpaRepository<Dispatch, Long> {
 
     boolean existsByDispatchNumber(String dispatchNumber);
 
-    /** Compte tous les bons d'un statut donné (dashboard global). */
+    /** Comptage pour le dashboard global. */
     long countByStatus(DispatchStatus status);
+
+    /** Comptage pour les rapports d'activité. */
+    int countByCreatedByIdAndWarehouseIdAndCreatedAtBetween(
+        Long createdById, Long warehouseId,
+        java.time.LocalDateTime from, java.time.LocalDateTime to
+    );
+
+    /** Liste pour le détail d'un rapport d'activité. */
+    java.util.List<Dispatch> findByCreatedByIdAndWarehouseIdAndCreatedAtBetween(
+        Long createdById, Long warehouseId,
+        java.time.LocalDateTime from, java.time.LocalDateTime to
+    );
 }

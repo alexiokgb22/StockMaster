@@ -9,8 +9,6 @@ export interface GlobalDashboardResponse {
   totalUnreadAlerts: number
   totalCriticalAlerts: number
   pendingPurchaseOrders: number
-  pendingReceptions: number
-  pendingDispatches: number
   pendingTransfers: number
 }
 
@@ -24,8 +22,6 @@ export interface WarehouseDashboardResponse {
   usedCapacity: number | null
   capacityPercent: number | null
   pendingPurchaseOrders: number
-  pendingReceptions: number
-  pendingDispatches: number
   incomingTransfers: number
   activeAlerts: number
   criticalAlerts: number

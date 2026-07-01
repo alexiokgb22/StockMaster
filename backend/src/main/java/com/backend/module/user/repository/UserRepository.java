@@ -122,4 +122,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     /** Comptage pour le dashboard global. */
     long countByIsActive(Boolean isActive);
+
+    /** Charge l'utilisateur avec son rôle — utilisé dans les services métier. */
+    @Query("SELECT u FROM User u JOIN FETCH u.role LEFT JOIN FETCH u.assignedWarehouse WHERE u.id = :id")
+    java.util.Optional<User> findByIdWithRole(@Param("id") Long id);
 }

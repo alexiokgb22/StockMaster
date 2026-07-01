@@ -5,7 +5,6 @@ import com.backend.exception.BusinessException;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.module.dispatch.dto.CreateDispatchRequest;
 import com.backend.module.dispatch.dto.DispatchResponse;
-import com.backend.module.dispatch.dto.RejectDispatchRequest;
 import com.backend.module.dispatch.entity.Dispatch;
 import com.backend.module.dispatch.entity.DispatchLine;
 import com.backend.module.dispatch.repository.DispatchRepository;
@@ -49,6 +48,7 @@ public class DispatchService {
     private final ZoneRepository zoneRepository;
     private final WarehouseRepository warehouseRepository;
     private final UserRepository userRepository;
+    private final com.backend.module.stock.service.CapacityService capacityService;
 
     // ─────────────────────────────────────────────────────────────
     // LECTURE — liste paginée pour un entrepôt
@@ -74,32 +74,21 @@ public class DispatchService {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // LECTURE — compteur PENDING pour le badge gestionnaire
-    // ─────────────────────────────────────────────────────────────
-
-    @Transactional(readOnly = true)
-    public long countPending(Long warehouseId) {
-        return dispatchRepository.countByWarehouseIdAndStatus(warehouseId, DispatchStatus.PENDING);
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // CRÉATION — Magasinier crée un bon de sortie (PENDING)
+    // CRÉATION — Magasinier crée ET valide le bon de sortie directement
     //
-    // Règles :
-    //   1. Vérifier que le stock existe et est suffisant pour chaque ligne.
-    //   2. Pas de décrément immédiat — le gestionnaire valide avant.
-    //   3. Chaque (produit, zone) doit être unique dans le bon.
+    // Le stock est décrémenté immédiatement. Le magasinier est
+    // responsable de l'opération via ses rapports d'activité.
     // ─────────────────────────────────────────────────────────────
 
     @Auditable(module = "dispatch", action = "CREATE", entity = "Dispatch",
-               description = "Bon de sortie créé")
+               description = "Bon de sortie créé et validé par le magasinier")
     public DispatchResponse create(Long warehouseId, CreateDispatchRequest req) {
         Warehouse warehouse = getWarehouse(warehouseId);
         User creator = currentUserEntity();
 
         Dispatch dispatch = Dispatch.builder()
                 .dispatchNumber(generateDispatchNumber())
-                .status(DispatchStatus.PENDING)
+                .status(DispatchStatus.VALIDATED)    // immédiatement validé
                 .note(req.getNote())
                 .clientFirstName(req.getClientFirstName())
                 .clientLastName(req.getClientLastName())
@@ -107,6 +96,8 @@ public class DispatchService {
                 .deliveryAddress(req.getDeliveryAddress())
                 .warehouse(warehouse)
                 .createdBy(creator)
+                .validatedBy(creator)               // le magasinier est aussi le validateur
+                .validatedAt(LocalDateTime.now())
                 .build();
 
         for (CreateDispatchRequest.DispatchLineRequest lineReq : req.getLines()) {
@@ -116,7 +107,7 @@ public class DispatchService {
 
             Zone zone = getZone(lineReq.getZoneId(), warehouseId);
 
-            // Vérifier que le stock existe et est suffisant
+            // Vérifier que le stock est suffisant
             Stock stock = stockRepository
                     .findByProductIdAndWarehouseIdAndZoneId(
                             product.getId(), warehouseId, zone.getId())
@@ -131,6 +122,23 @@ public class DispatchService {
                         + ", demandé : " + lineReq.getQuantityRequested());
             }
 
+            // Décrémenter le stock immédiatement
+            stock.setQuantityAvailable(stock.getQuantityAvailable() - lineReq.getQuantityRequested());
+            stockRepository.save(stock);
+
+            // StockMovement EXIT
+            StockMovement movement = StockMovement.builder()
+                    .product(product)
+                    .warehouse(warehouse)
+                    .zone(zone)
+                    .quantity(lineReq.getQuantityRequested())
+                    .movementType(MovementType.EXIT)
+                    .referenceDoc(dispatch.getDispatchNumber())
+                    .note("Sortie de stock — bon " + dispatch.getDispatchNumber())
+                    .createdBy(creator)
+                    .build();
+            stockMovementRepository.save(movement);
+
             DispatchLine line = DispatchLine.builder()
                     .dispatch(dispatch)
                     .product(product)
@@ -142,86 +150,12 @@ public class DispatchService {
             dispatch.getLines().add(line);
         }
 
-        return toResponse(dispatchRepository.save(dispatch));
-    }
+        DispatchResponse response = toResponse(dispatchRepository.save(dispatch));
 
-    // ─────────────────────────────────────────────────────────────
-    // VALIDATION — Gestionnaire valide (PENDING → VALIDATED)
-    // Décrémente le stock + génère StockMovement EXIT
-    // ─────────────────────────────────────────────────────────────
+        // Recalcul capacité après décrément
+        capacityService.recalculate(warehouse);
 
-    @Auditable(module = "dispatch", action = "VALIDATE", entity = "Dispatch",
-               description = "Bon de sortie validé — stock décrémenté")
-    public DispatchResponse validate(Long warehouseId, Long dispatchId) {
-        Dispatch dispatch = getDispatchInWarehouse(dispatchId, warehouseId);
-        User validator = currentUserEntity();
-
-        if (dispatch.getStatus() != DispatchStatus.PENDING) {
-            throw new BusinessException("Seuls les bons PENDING peuvent être validés");
-        }
-
-        // Vérifier à nouveau la disponibilité du stock au moment de la validation
-        for (DispatchLine line : dispatch.getLines()) {
-            Stock stock = stockRepository
-                    .findByProductIdAndWarehouseIdAndZoneId(
-                            line.getProduct().getId(), warehouseId, line.getZone().getId())
-                    .orElseThrow(() -> new BusinessException(
-                            "Stock introuvable pour " + line.getProduct().getName()));
-
-            if (stock.getQuantityAvailable() < line.getQuantityRequested()) {
-                throw new BusinessException(
-                        "Stock insuffisant pour " + line.getProduct().getName()
-                        + " au moment de la validation — disponible : "
-                        + stock.getQuantityAvailable()
-                        + ", demandé : " + line.getQuantityRequested());
-            }
-
-            // Décrémenter le stock
-            stock.setQuantityAvailable(stock.getQuantityAvailable() - line.getQuantityRequested());
-            stockRepository.save(stock);
-
-            // Générer un StockMovement EXIT
-            StockMovement movement = StockMovement.builder()
-                    .product(line.getProduct())
-                    .warehouse(dispatch.getWarehouse())
-                    .zone(line.getZone())
-                    .quantity(line.getQuantityRequested())
-                    .movementType(MovementType.EXIT)
-                    .referenceDoc(dispatch.getDispatchNumber())
-                    .note("Sortie de stock — bon " + dispatch.getDispatchNumber())
-                    .createdBy(validator)
-                    .build();
-            stockMovementRepository.save(movement);
-        }
-
-        dispatch.setStatus(DispatchStatus.VALIDATED);
-        dispatch.setValidatedAt(LocalDateTime.now());
-        dispatch.setValidatedBy(validator);
-
-        return toResponse(dispatchRepository.save(dispatch));
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // REJET — Gestionnaire rejette (PENDING → REJECTED)
-    // Aucune modification de stock
-    // ─────────────────────────────────────────────────────────────
-
-    @Auditable(module = "dispatch", action = "REJECT", entity = "Dispatch",
-               description = "Bon de sortie rejeté")
-    public DispatchResponse reject(Long warehouseId, Long dispatchId, RejectDispatchRequest req) {
-        Dispatch dispatch = getDispatchInWarehouse(dispatchId, warehouseId);
-        User validator = currentUserEntity();
-
-        if (dispatch.getStatus() != DispatchStatus.PENDING) {
-            throw new BusinessException("Seuls les bons PENDING peuvent être rejetés");
-        }
-
-        dispatch.setStatus(DispatchStatus.REJECTED);
-        dispatch.setRejectionReason(req != null ? req.getReason() : null);
-        dispatch.setValidatedAt(LocalDateTime.now());
-        dispatch.setValidatedBy(validator);
-
-        return toResponse(dispatchRepository.save(dispatch));
+        return response;
     }
 
     // ─────────────────────────────────────────────────────────────

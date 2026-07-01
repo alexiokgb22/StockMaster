@@ -9,7 +9,6 @@ import com.backend.module.purchaseorderline.entity.PurchaseOrderLine;
 import com.backend.module.purchaseorderline.repository.PurchaseOrderLineRepository;
 import com.backend.module.reception.dto.CreateReceptionRequest;
 import com.backend.module.reception.dto.ReceptionResponse;
-import com.backend.module.reception.dto.RejectReceptionRequest;
 import com.backend.module.reception.entity.Reception;
 import com.backend.module.reception.entity.ReceptionLine;
 import com.backend.module.reception.repository.ReceptionRepository;
@@ -53,6 +52,7 @@ public class ReceptionService {
     private final StockRepository stockRepository;
     private final StockMovementRepository stockMovementRepository;
     private final UserRepository userRepository;
+    private final com.backend.module.stock.service.CapacityService capacityService;
 
     // ─────────────────────────────────────────────────────────────
     // LECTURE — liste paginée pour un entrepôt
@@ -94,25 +94,19 @@ public class ReceptionService {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // LECTURE — compteur PENDING pour le badge gestionnaire
-    // ─────────────────────────────────────────────────────────────
-
-    @Transactional(readOnly = true)
-    public long countPending(Long warehouseId) {
-        return receptionRepository.countByWarehouseIdAndStatus(warehouseId, ReceptionStatus.PENDING);
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // CRÉATION — Magasinier crée un bon de réception (PENDING)
+    // CRÉATION — Magasinier crée ET valide le bon en une seule opération
+    //
+    // Le magasinier est physiquement présent à la réception et fait
+    // le contrôle qualité lui-même. Le stock est mis à jour immédiatement.
+    // Le gestionnaire consulte l'historique via ses rapports d'activité.
     // ─────────────────────────────────────────────────────────────
 
     @Auditable(module = "reception", action = "CREATE", entity = "Reception",
-               description = "Nouveau bon de réception créé")
+               description = "Bon de réception créé et validé par le magasinier")
     public ReceptionResponse create(Long warehouseId, CreateReceptionRequest req) {
         Warehouse warehouse = getWarehouse(warehouseId);
         User creator = currentUserEntity();
 
-        // Récupérer la commande et vérifier qu'elle est DELIVERED dans cet entrepôt
         PurchaseOrder order = purchaseOrderRepository.findByIdWithDetails(req.getPurchaseOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Commande introuvable : " + req.getPurchaseOrderId()));
@@ -124,29 +118,30 @@ public class ReceptionService {
             throw new BusinessException("Seules les commandes livrées peuvent être réceptionnées");
         }
 
-        // Vérifier qu'aucun bon PENDING n'existe déjà pour cette commande
+        // Vérifier qu'aucun bon n'existe déjà pour cette commande
         if (receptionRepository.existsByPurchaseOrderIdAndStatus(
-                order.getId(), ReceptionStatus.PENDING)) {
+                order.getId(), ReceptionStatus.VALIDATED)) {
             throw new BusinessException(
-                    "Un bon de réception est déjà en attente de validation pour cette commande");
+                    "Un bon de réception a déjà été créé pour cette commande");
         }
 
         Reception reception = Reception.builder()
                 .receptionNumber(generateReceptionNumber())
-                .status(ReceptionStatus.PENDING)
+                .status(ReceptionStatus.VALIDATED)   // immédiatement validé
                 .note(req.getNote())
                 .purchaseOrder(order)
                 .warehouse(warehouse)
                 .createdBy(creator)
+                .validatedBy(creator)                // le magasinier est aussi le validateur
+                .validatedAt(LocalDateTime.now())
                 .build();
 
-        // Construire les lignes
+        // Construire les lignes ET mettre à jour le stock directement
         for (CreateReceptionRequest.ReceptionLineRequest lineReq : req.getLines()) {
             PurchaseOrderLine pol = purchaseOrderLineRepository.findById(lineReq.getPurchaseOrderLineId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Ligne de commande introuvable : " + lineReq.getPurchaseOrderLineId()));
 
-            // Vérifier que la ligne appartient bien à cette commande
             if (!pol.getPurchaseOrder().getId().equals(order.getId())) {
                 throw new BusinessException("La ligne " + lineReq.getPurchaseOrderLineId()
                         + " n'appartient pas à cette commande");
@@ -166,37 +161,20 @@ public class ReceptionService {
             reception.getLines().add(line);
         }
 
-        return toResponse(receptionRepository.save(reception));
-    }
+        Reception saved = receptionRepository.save(reception);
 
-    // ─────────────────────────────────────────────────────────────
-    // VALIDATION — Gestionnaire valide (PENDING → VALIDATED)
-    // Met à jour le stock + génère les StockMovement + clôture la commande
-    // ─────────────────────────────────────────────────────────────
-
-    @Auditable(module = "reception", action = "VALIDATE", entity = "Reception",
-               description = "Bon de réception validé — stock mis à jour")
-    public ReceptionResponse validate(Long warehouseId, Long receptionId) {
-        Reception reception = getReceptionInWarehouse(receptionId, warehouseId);
-        User validator = currentUserEntity();
-
-        if (reception.getStatus() != ReceptionStatus.PENDING) {
-            throw new BusinessException("Seuls les bons en PENDING peuvent être validés");
-        }
-
-        // Mettre à jour chaque ligne de stock
-        for (ReceptionLine line : reception.getLines()) {
-            if (line.getQuantityReceived() == 0) continue; // rien à ranger
+        // Mettre à jour le stock pour chaque ligne
+        for (ReceptionLine line : saved.getLines()) {
+            if (line.getQuantityReceived() == 0) continue;
 
             Long productId = line.getPurchaseOrderLine().getProduct().getId();
             Long zoneId    = line.getZone().getId();
 
-            // Trouver ou créer la ligne de stock
             Stock stock = stockRepository
                     .findByProductIdAndWarehouseIdAndZoneId(productId, warehouseId, zoneId)
                     .orElseGet(() -> Stock.builder()
                             .product(line.getPurchaseOrderLine().getProduct())
-                            .warehouse(reception.getWarehouse())
+                            .warehouse(warehouse)
                             .zone(line.getZone())
                             .quantityAvailable(0)
                             .quantityReserved(0)
@@ -206,16 +184,16 @@ public class ReceptionService {
             stock.setQuantityAvailable(stock.getQuantityAvailable() + line.getQuantityReceived());
             stockRepository.save(stock);
 
-            // Générer un StockMovement ENTRY
+            // StockMovement ENTRY
             StockMovement movement = StockMovement.builder()
                     .product(line.getPurchaseOrderLine().getProduct())
-                    .warehouse(reception.getWarehouse())
+                    .warehouse(warehouse)
                     .zone(line.getZone())
                     .quantity(line.getQuantityReceived())
                     .movementType(MovementType.ENTRY)
-                    .referenceDoc(reception.getReceptionNumber())
-                    .note("Réception commande " + reception.getPurchaseOrder().getOrderNumber())
-                    .createdBy(validator)
+                    .referenceDoc(saved.getReceptionNumber())
+                    .note("Réception commande " + order.getOrderNumber())
+                    .createdBy(creator)
                     .build();
             stockMovementRepository.save(movement);
 
@@ -226,42 +204,13 @@ public class ReceptionService {
         }
 
         // Clôturer la commande
-        PurchaseOrder order = reception.getPurchaseOrder();
         order.setStatus(PurchaseOrderStatus.CLOSED);
         purchaseOrderRepository.save(order);
 
-        // Valider le bon
-        reception.setStatus(ReceptionStatus.VALIDATED);
-        reception.setValidatedAt(LocalDateTime.now());
-        reception.setValidatedBy(validator);
+        // Recalcul de la capacité
+        capacityService.recalculate(warehouse);
 
-        return toResponse(receptionRepository.save(reception));
-    }
-
-    // ─────────────────────────────────────────────────────────────
-    // REJET — Gestionnaire rejette (PENDING → REJECTED)
-    // La commande repasse à DELIVERED pour une nouvelle réception
-    // ─────────────────────────────────────────────────────────────
-
-    @Auditable(module = "reception", action = "REJECT", entity = "Reception",
-               description = "Bon de réception rejeté")
-    public ReceptionResponse reject(Long warehouseId, Long receptionId, RejectReceptionRequest req) {
-        Reception reception = getReceptionInWarehouse(receptionId, warehouseId);
-        User validator = currentUserEntity();
-
-        if (reception.getStatus() != ReceptionStatus.PENDING) {
-            throw new BusinessException("Seuls les bons en PENDING peuvent être rejetés");
-        }
-
-        reception.setStatus(ReceptionStatus.REJECTED);
-        reception.setRejectionReason(req != null ? req.getReason() : null);
-        reception.setValidatedAt(LocalDateTime.now());
-        reception.setValidatedBy(validator);
-
-        // La commande reste DELIVERED — un nouveau bon pourra être créé
-        receptionRepository.save(reception);
-
-        return toResponse(reception);
+        return toResponse(saved);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -281,15 +230,6 @@ public class ReceptionService {
     private Reception getReception(Long id) {
         return receptionRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Bon de réception introuvable : " + id));
-    }
-
-    private Reception getReceptionInWarehouse(Long receptionId, Long warehouseId) {
-        Reception reception = getReception(receptionId);
-        if (!reception.getWarehouse().getId().equals(warehouseId)) {
-            throw new ResourceNotFoundException(
-                    "Bon de réception introuvable dans cet entrepôt : " + receptionId);
-        }
-        return reception;
     }
 
     private Warehouse getWarehouse(Long id) {

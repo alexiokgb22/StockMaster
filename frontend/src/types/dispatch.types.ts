@@ -1,4 +1,6 @@
-export type DispatchStatus = 'PENDING' | 'VALIDATED' | 'REJECTED'
+// Seul statut possible désormais : VALIDATED
+// Le magasinier crée et valide en une seule opération
+export type DispatchStatus = 'VALIDATED'
 
 export interface DispatchLineResponse {
   id: number
@@ -18,7 +20,6 @@ export interface DispatchResponse {
   dispatchNumber: string
   status: DispatchStatus
   note: string | null
-  rejectionReason: string | null
   validatedAt: string | null
   clientFirstName: string
   clientLastName: string
@@ -47,8 +48,4 @@ export interface CreateDispatchRequest {
   clientPhone: string
   deliveryAddress: string
   lines: DispatchLineRequest[]
-}
-
-export interface RejectDispatchRequest {
-  reason?: string
 }

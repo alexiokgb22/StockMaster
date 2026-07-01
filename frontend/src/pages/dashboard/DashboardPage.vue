@@ -33,24 +33,12 @@
         </div>
 
         <!-- KPIs flux en attente -->
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
           <KpiCard
             label="Commandes à livrer"
             :value="globalData.pendingPurchaseOrders"
             color="blue"
             icon="📦"
-          />
-          <KpiCard
-            label="Réceptions en attente"
-            :value="globalData.pendingReceptions"
-            color="amber"
-            icon="📥"
-          />
-          <KpiCard
-            label="Sorties en attente"
-            :value="globalData.pendingDispatches"
-            color="purple"
-            icon="📤"
           />
           <KpiCard
             label="Transferts en transit"
@@ -135,11 +123,9 @@
         </div>
 
         <!-- Flux en attente -->
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <KpiCard label="Commandes à livrer"    :value="warehouseData.pendingPurchaseOrders" color="blue"   icon="📦" />
-          <KpiCard label="Réceptions en attente" :value="warehouseData.pendingReceptions"     color="amber"  icon="📥" />
-          <KpiCard label="Sorties en attente"    :value="warehouseData.pendingDispatches"     color="purple" icon="📤" />
-          <KpiCard label="Transferts entrants"   :value="warehouseData.incomingTransfers"     color="teal"   icon="🔄" />
+        <div class="grid gap-4 sm:grid-cols-2">
+          <KpiCard label="Commandes à livrer"  :value="warehouseData.pendingPurchaseOrders" color="blue"   icon="📦" />
+          <KpiCard label="Transferts entrants" :value="warehouseData.incomingTransfers"     color="teal"   icon="🔄" />
         </div>
 
         <!-- Alertes -->

@@ -33,10 +33,9 @@
       <SidebarSection label="Inventaire"       :items="inventoryLinks" />
       <SidebarSection label="Approvisionnement" :items="supplyLinks" />
       <SidebarSection label="Mouvements"        :items="movementLinks" />
-      <SidebarSection label="Rapports"          :items="reportsLinks" />
       <SidebarSection
         v-if="traceabilityLinks.length"
-        label="Audit"
+        label="Audit & Rapports"
         :items="traceabilityLinks"
       />
     </nav>
@@ -145,8 +144,9 @@ const supplyLinks = computed(() => {
 })
 
 const movementLinks = computed(() => {
-  const isAdmin = currentUser.value?.role === 'Administrateur'
-  const isManager = currentUser.value?.role === "Gestionnaire d'entrepôt"
+  const isAdmin      = currentUser.value?.role === 'Administrateur'
+  const isManager    = currentUser.value?.role === "Gestionnaire d'entrepôt"
+  const isStorekeeper = currentUser.value?.role === 'Magasinier'
   return filterLinks([
     { title: 'Réceptions', to: { name: 'Receptions' }, permission: 'receipt.create' },
     { title: 'Sorties',    to: { name: 'Dispatches' }, permission: 'dispatch.create' },
@@ -156,17 +156,18 @@ const movementLinks = computed(() => {
       : isManager
         ? [{ title: 'Transferts', to: { name: 'Transfers' }, permission: 'transfer.create' }]
         : []),
+    // Magasinier : lien vers ses rapports d'activité
+    ...(isStorekeeper
+      ? [{ title: 'Mes rapports', to: { name: 'ActivityReports' }, permission: 'activity_report.create' }]
+      : []),
   ])
 })
 
-const reportsLinks = computed(() => [
-  { title: 'Rapports', to: { name: 'NotFound' }, comingSoon: true },
-])
-
 const traceabilityLinks = computed(() =>
   filterLinks([
-    { title: 'Traçabilité', to: { name: 'Traceability' }, permission: 'audit.view' },
-    { title: 'Alertes',     to: { name: 'Alerts' },       permission: 'alert.view' },
+    { title: 'Traçabilité',        to: { name: 'Traceability' },    permission: 'audit.view' },
+    { title: 'Alertes',            to: { name: 'Alerts' },          permission: 'alert.view' },
+    { title: 'Rapports activité',  to: { name: 'ActivityReports' }, permission: 'activity_report.view' },
   ]),
 )
 </script>

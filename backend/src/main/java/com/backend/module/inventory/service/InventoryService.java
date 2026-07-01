@@ -45,6 +45,7 @@ public class InventoryService {
     private final StockMovementRepository stockMovementRepository;
     private final WarehouseRepository warehouseRepository;
     private final UserRepository userRepository;
+    private final com.backend.module.stock.service.CapacityService capacityService;
 
     // ─────────────────────────────────────────────────────────────
     // LECTURE — liste paginée
@@ -231,7 +232,12 @@ public class InventoryService {
         fullInventory.setInventoryStatus(InventoryStatus.COMPLETED);
         fullInventory.setCompletedAt(LocalDateTime.now());
 
-        return toResponse(inventoryRepository.save(fullInventory));
+        InventoryResponse response = toResponse(inventoryRepository.save(fullInventory));
+
+        // Recalcul de la capacité après ajustements de stock
+        capacityService.recalculate(fullInventory.getWarehouse());
+
+        return response;
     }
 
     // ─────────────────────────────────────────────────────────────

@@ -169,7 +169,15 @@ const routes = [
         component: () => import('@/pages/alerts/AlertsPage.vue'),
         meta: { permission: 'alert.view' },
       },
-    ],
+      // ── Rapports d'activité ───────────────────────────────────
+      // Accessible au magasinier (activity_report.create) ET au gestionnaire (activity_report.view)
+      // Le contrôle fin se fait dans la page selon le rôle
+      {
+        path: 'activity-reports',
+        name: 'ActivityReports',
+        component: () => import('@/pages/activityreports/ActivityReportsPage.vue'),
+        meta: { requiresAuth: true },
+      },    ],
   },
   {
     path: '/:pathMatch(.*)*',
